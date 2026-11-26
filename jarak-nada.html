@@ -21,16 +21,10 @@ main{padding:16px;display:flex;justify-content:center}
 #chart{width:100%;max-width:1000px;box-shadow:0 2px 14px rgba(0,0,0,.15);background:#fff}
 #chart svg{display:block;width:100%;height:auto}
 #chart .note{cursor:pointer}
-nav{flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);margin:-4px 0 4px}
-nav a{font-size:14px;padding:6px 14px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}
-nav a:hover{color:var(--ink)}
-nav a[aria-current]{color:var(--teal);border-bottom-color:var(--teal);font-weight:bold}
-@media (prefers-color-scheme:dark){nav a[aria-current]{color:#7cc4c9;border-bottom-color:#7cc4c9}}
 </style>
 </head>
 <body>
 <div class="bar">
-  <nav><a href="index.html">Scale Chart</a><a href="chord-chart.html">Chord Chart</a><a href="lingkaran-kuint.html">Lingkaran Kuint</a><a href="jarak-nada.html" aria-current="page">Jarak Nada</a><a href="metronom.html">Metronome</a><a href="strumming.html">Pola Strumming</a><a href="chord-finder.html">Pencari Chord</a></nav>
   <label>Nada dasar<select id="key"></select></label>
   <label>Tangga nada<select id="scale"></select></label>
   <label>Baris bawah<select id="sol"><option value="sol">Solmisasi (do re mi)</option><option value="num">Angka (1 2 3)</option><option value="none">Tidak ada</option></select></label>
@@ -60,6 +54,7 @@ const SCALES=[
   {t:"Lydian",id:"Lydian",...mode(3)},
   {t:"Mixolydian",id:"Mixolydian",...mode(4)},
   {t:"Locrian",id:"Locrian",...mode(6)},
+  {t:"Phrygian Dominant",id:"Phrygian dominan (mode ke-5 minor harmonis)",iv:[[0,1],[1,2],[4,3],[5,4],[7,5],[8,6],[10,7]],sol:["mi","fa","sel","la","si","do","re"]},
   {t:"Major Pentatonic",id:"pentatonik mayor",iv:[[0,1],[2,2],[4,3],[7,5],[9,6]],sol:["do","re","mi","so","la"]},
   {t:"Minor Pentatonic",id:"pentatonik minor",iv:[[0,1],[3,3],[5,4],[7,5],[10,7]],sol:["la","do","re","mi","so"]},
   {t:"Blues",id:"blues",iv:[[0,1],[3,3],[5,4],[6,5],[7,5],[10,7]],sol:["la","do","re","ri","mi","so"]},
