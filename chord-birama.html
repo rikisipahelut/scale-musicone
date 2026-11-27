@@ -88,6 +88,35 @@ input[type=range]{width:180px;accent-color:var(--teal)}
 #quick{width:min(520px,100%)}
 @media (max-width:820px){.now{grid-template-columns:1fr 120px}.now .nx{grid-column:1/-1}.now .big{font-size:56px}}
 @media (max-width:420px){header h1{font-size:24px}header .brand svg{width:110px}.now .big{font-size:44px}}
+.melnav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 8px}
+.melinfo{min-width:170px}
+#melInfo{font-weight:700;color:var(--ink);font-size:16px}
+.fill{color:var(--muted);font-size:13px}
+.melview{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:6px 0;max-width:760px}
+.melview svg{display:block;width:100%;height:auto}
+.melnotes{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;min-height:40px;align-items:center}
+.melnotes .empty{color:var(--muted);font-size:14px}
+.melnotes button{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:8px;padding:3px 10px;cursor:pointer;font:inherit;display:flex;flex-direction:column;align-items:center;line-height:1.15;min-width:44px}
+.melnotes button b{font-size:18px;color:var(--ink)}
+.melnotes button small{color:var(--muted);font-size:11px}
+.melnotes button.sel{border-color:var(--accent);background:#fff4e3}
+.melnotes button.sel b,.melnotes button.sel small{color:#8a4b00}
+.durs{gap:6px;margin:6px 0}
+.durs button{font:inherit;font-size:14px;padding:6px 10px;border-radius:8px;border:1px solid var(--teal);background:transparent;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;line-height:1.15;min-width:62px}
+.durs button small{font-size:11px;color:var(--muted)}
+.durs button.on{background:var(--teal);color:#fff}
+.durs button.on small{color:#d8ecec}
+.durs button:disabled{opacity:.35;cursor:not-allowed}
+.durs .check{padding-bottom:0;margin-left:6px}
+.piano{margin:10px 0;overflow-x:auto;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.piano .kb{position:relative;height:150px;min-width:600px}
+.piano .wk{position:absolute;top:0;bottom:0;border:1px solid #9fb0b0;background:#fff;border-radius:0 0 7px 7px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:6px;font-size:10px;color:#7d8c8c;cursor:pointer}
+.piano .wk b{font-size:15px;color:#17464f;line-height:1.1}
+.piano .wk.do{background:#e3f1ef}
+.piano .bk{position:absolute;top:0;height:60%;background:#22302f;border-radius:0 0 5px 5px;z-index:2;color:#cfe6e6;font-size:12px;font-weight:700;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;cursor:pointer}
+.piano .wk.hit,.piano .bk.hit{background:var(--accent)}
+.bar.hasmel .tools .mel{color:var(--accent);font-weight:700}
+.bar.meledit{border-style:dashed;border-color:var(--teal)}
 nav{position:sticky;top:0;z-index:2;background:var(--card);border-bottom:1px solid var(--line);padding:6px 16px 0;display:flex;flex-wrap:wrap;gap:4px}
 nav a{font-size:14px;padding:6px 14px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}
 nav a:hover{color:var(--text)}
@@ -120,6 +149,7 @@ nav a[aria-current]{color:var(--teal);border-bottom-color:var(--teal);font-weigh
       <label class="check"><input type="checkbox" id="cues"> Aba-aba suara</label>
       <label class="check"><input type="checkbox" id="loop" checked> Ulangi terus</label>
       <label class="check"><input type="checkbox" id="chordOn" checked> Bunyi chord</label>
+      <label class="check"><input type="checkbox" id="melOn" checked> Bunyi melodi</label>
     </div>
   </section>
 
@@ -160,6 +190,33 @@ nav a[aria-current]{color:var(--teal);border-bottom-color:var(--teal);font-weigh
     <p class="msg" id="msg"></p>
     <p class="hint">Satu chord dalam bar diletakkan di ketukan 1. Dua chord di 4/4 jatuh di ketukan 1 dan 3, empat chord tiap ketukan satu. Pakai titik "." untuk ketukan kosong, misalnya <b>G . . D</b>. Tandai bagian lagu dengan kurung siku, misalnya <b>[Intro] G | D | [Verse] Em | C | [Chorus] G | D</b>.</p>
   </section>
+  <section class="card" id="melCard">
+    <h2>Melodi</h2>
+    <div class="controls">
+      <label>Nada dasar (do =)<select id="key"></select></label>
+      <label>Suara melodi<select id="melSnd"><option value="lead">Flute / lead</option><option value="piano">Piano</option></select></label>
+      <label>Di bawah not balok<select id="melText"><option value="num">Not angka (1 2 3)</option><option value="let">Not huruf (C D E)</option><option value="both">Not angka + not huruf</option><option value="none">Tidak ada (not balok saja)</option></select></label>
+      <label class="check"><input type="checkbox" id="melOn2"> Bunyikan melodi</label>
+    </div>
+    <div class="melnav">
+      <button class="btn" id="melPrev" title="Bar sebelumnya">◀</button>
+      <div class="melinfo"><div id="melInfo">Bar 1</div><div class="fill" id="melFill"></div></div>
+      <button class="btn" id="melNext" title="Bar berikutnya">▶</button>
+      <button class="btn" id="melPlay">▶ Dengar bar ini</button>
+    </div>
+    <div class="melview" id="melView"></div>
+    <div class="melnotes" id="melNotes"></div>
+    <div class="controls durs" id="durs"></div>
+    <div class="piano" id="piano"></div>
+    <div class="controls">
+      <button class="btn" id="melRest">0 · Tanda diam</button>
+      <button class="btn" id="melDel">⌫ Hapus not</button>
+      <button class="btn danger" id="melClr">Kosongkan bar ini</button>
+    </div>
+    <p class="msg" id="melMsg"></p>
+    <p class="hint">Pilih bar dengan ◀ ▶ atau tombol <b>♪</b> di kotak bar. Pilih durasi (1/4 = satu ketukan pada birama x/4, centang <b>Titik</b> untuk not bertitik), lalu klik tuts piano. Not langsung masuk dan berbunyi. Kalau bar sudah penuh, Anda otomatis pindah ke bar berikutnya. Untuk mengubah not, klik notnya di daftar (warnanya jadi oranye), lalu klik tuts lain untuk mengganti nada atau klik durasi lain untuk mengganti panjangnya. Angka di tuts adalah not angka sesuai <b>Nada dasar</b>; titik di atas/bawah angka berarti oktaf tinggi/rendah. Melodi tampil di partitur sebagai not balok + not angka, ikut terdengar saat dimainkan, dan masuk ke MIDI, MP3, dan WAV (selama <b>Bunyi melodi</b> dicentang).</p>
+  </section>
+
   <section class="card">
     <h2>Aba-aba suara (guide)</h2>
     <div class="controls">
@@ -450,14 +507,14 @@ function pianoNotes(p){
 /* ---------- birama ---------- */
 const TS={"2/4":{n:2,acc:[0]},"3/4":{n:3,acc:[0]},"4/4":{n:4,acc:[0,2]},"5/4":{n:5,acc:[0,3]},"6/8":{n:6,acc:[0,3]},"7/8":{n:7,acc:[0,2,4]},"9/8":{n:9,acc:[0,3,6]},"12/8":{n:12,acc:[0,3,6,9]}};
 const STORE="musicone-chordbirama-v1";
-let S={ts:"4/4",bpm:90,snd:"guitar",mode:"each",metro:true,countin:true,countBars:1,cues:false,cueWhen:"before",expCount:true,loop:true,chordOn:true,bars:[["G","","",""],["Am","","",""],["Bm","","",""],["C","","D",""]]};
+let S={ts:"4/4",bpm:90,snd:"guitar",mode:"each",metro:true,countin:true,countBars:1,cues:false,cueWhen:"before",expCount:true,loop:true,chordOn:true,key:"C",melOn:true,melSnd:"lead",melText:"num",mel:[],bars:[["G","","",""],["Am","","",""],["Bm","","",""],["C","","D",""]]};
 try{const d=JSON.parse(localStorage.getItem(STORE)); if(d&&Array.isArray(d.bars)&&TS[d.ts]) S=Object.assign(S,d);}catch(e){}
 var scoreQ=0;
 const SECTIONS=["Intro","Verse","Verse 1","Verse 2","Verse 3","Pre-Chorus","Chorus","Chorus 2","Bridge","Interlude","Solo","Coda","Outro","Ending"];
-function syncSecs(){S.secs=Array.isArray(S.secs)?S.secs:[]; S.secs=S.bars.map((_,i)=>typeof S.secs[i]==="string"?S.secs[i]:"");}
+function syncSecs(){S.secs=Array.isArray(S.secs)?S.secs:[]; S.secs=S.bars.map((_,i)=>typeof S.secs[i]==="string"?S.secs[i]:""); syncMel();}
 const secOf=b=>((S.secs&&S.secs[b])||"").trim();
 const secAt=b=>{for(let i=b;i>=0;i--) if(secOf(i)) return secOf(i); return "";};
-function persist(){if(typeof renderCues==="function"&&$("cueList")&&!rec) renderCues(); try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){} cancelAnimationFrame(scoreQ); scoreQ=requestAnimationFrame(()=>renderScore());}
+function persist(){syncMel(); if(typeof renderCues==="function"&&$("cueList")&&!rec) renderCues(); try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){} cancelAnimationFrame(scoreQ); scoreQ=requestAnimationFrame(()=>{renderScore(); if(typeof renderMel==="function") renderMel();});}
 const beatsN=()=>TS[S.ts].n;
 const isAcc=k=>TS[S.ts].acc.includes(k);
 const level=k=>k===0?2:isAcc(k)?1:0;
@@ -485,8 +542,8 @@ let focusCell=null;
 function renderBars(){
   const n=beatsN();
   document.documentElement.style.setProperty("--barw",Math.min(n*62+20,760)+"px");
-  $("bars").innerHTML=S.bars.map((bar,b)=>'<div class="bar" data-b="'+b+'"><div class="top"><span class="left"><span class="num" title="Mainkan dari bar ini">▶ '+(b+1)+'</span>'+secSelect(b)+'</span>'+
-    '<span class="tools"><button class="dup" title="Gandakan bar">⧉</button><button class="del" title="Hapus bar">✕</button></span></div>'+
+  $("bars").innerHTML=S.bars.map((bar,b)=>'<div class="bar'+(S.mel&&S.mel[b]&&S.mel[b].length?' hasmel':'')+(typeof melBar!=="undefined"&&b===melBar?' meledit':'')+'" data-b="'+b+'"><div class="top"><span class="left"><span class="num" title="Mainkan dari bar ini">▶ '+(b+1)+'</span>'+secSelect(b)+'</span>'+
+    '<span class="tools"><button class="mel" title="Isi / ubah melodi bar ini">♪</button><button class="dup" title="Gandakan bar">⧉</button><button class="del" title="Hapus bar">✕</button></span></div>'+
     '<div class="beats" style="grid-template-columns:repeat('+n+',1fr)">'+bar.map((c,k)=>'<div class="cell'+(isAcc(k)?' acc':'')+'" data-b="'+b+'" data-k="'+k+'"><span class="bn">'+(k+1)+'</span>'+
       '<input type="text" value="'+esc(c)+'" placeholder="·" spellcheck="false" autocomplete="off" data-b="'+b+'" data-k="'+k+'"></div>').join("")+'</div></div>').join("");
   $("bars").querySelectorAll("input").forEach(validate);
@@ -523,8 +580,9 @@ $("bars").addEventListener("keydown",e=>{
 });
 $("bars").addEventListener("click",e=>{
   const barEl=e.target.closest(".bar"); if(!barEl) return; const b=+barEl.dataset.b;
-  if(e.target.closest(".del")){if(S.bars.length>1||confirm("Hapus bar terakhir?")){syncSecs(); S.bars.splice(b,1); S.secs.splice(b,1); if(!S.bars.length){S.bars.push(emptyBar());S.secs.push("");} persist(); renderBars();} return;}
-  if(e.target.closest(".dup")){syncSecs(); S.bars.splice(b+1,0,S.bars[b].slice()); S.secs.splice(b+1,0,""); persist(); renderBars(); return;}
+  if(e.target.closest(".del")){if(S.bars.length>1||confirm("Hapus bar terakhir?")){syncSecs(); S.bars.splice(b,1); S.secs.splice(b,1); S.mel.splice(b,1); if(!S.bars.length){S.bars.push(emptyBar());S.secs.push("");} persist(); renderBars();} return;}
+  if(e.target.closest(".mel")){openMel(b); return;}
+  if(e.target.closest(".dup")){syncSecs(); S.bars.splice(b+1,0,S.bars[b].slice()); S.secs.splice(b+1,0,""); S.mel.splice(b+1,0,S.mel[b].map(x=>({p:x.p,d:x.d}))); persist(); renderBars(); return;}
   if(e.target.closest(".num")){stop(); start(b);}
 });
 $("chips").addEventListener("click",e=>{
@@ -538,7 +596,7 @@ $("chips").addEventListener("click",e=>{
 const emptyBar=()=>Array(beatsN()).fill("");
 function addBar(){syncSecs(); S.bars.push(emptyBar()); S.secs.push(""); persist(); renderBars();}
 $("addBar").onclick=addBar;
-$("clearAll").onclick=()=>{if(confirm("Hapus semua bar dan chord? Ini tidak bisa dibatalkan.")){stop();S.bars=[emptyBar(),emptyBar(),emptyBar(),emptyBar()];S.secs=["","","",""];persist();renderBars();}};
+$("clearAll").onclick=()=>{if(confirm("Hapus semua bar, chord, dan melodi? Ini tidak bisa dibatalkan.")){stop();S.bars=[emptyBar(),emptyBar(),emptyBar(),emptyBar()];S.secs=["","","",""];S.mel=[];persist();renderBars();}};
 
 /* isi cepat */
 function quickParse(txt){
@@ -606,7 +664,7 @@ function start(fromBar){
 }
 function stop(){
   if(!playing) return; playing=false; clearInterval(timer); cancelAnimationFrame(raf);
-  if(ctx) stopVoices(ctx.currentTime);
+  if(ctx){stopVoices(ctx.currentTime); stopMel(ctx.currentTime);}
   $("playBtn").textContent="▶ Mainkan"; $("playBtn").classList.remove("on");
   document.querySelectorAll(".cell.now,.bar.cur").forEach(x=>x.classList.remove("now","cur"));
   document.querySelectorAll(".dot.on").forEach(x=>x.classList.remove("on"));
@@ -623,6 +681,7 @@ function playBeat(t,b,k,metro,chordOn,nb){
     else { if(cell||lv>0) strumAt(p,t,vol,"bass"); else strumAt(p,t,.8,"upper"); }
     lastName=padName(p);
   }
+  if(S.melOn!==false) melBeat(t,b,k);
   return p;
 }
 /* satu ketukan hitungan awal: klik + "Ready" + nama bagian pertama + angka 1, 2, 3, 4 */
@@ -689,6 +748,7 @@ $("ts").innerHTML=Object.keys(TS).map(t=>'<option>'+t+'</option>').join("");
 function syncUI(){
   $("ts").value=S.ts; $("bpm").value=$("bpmR").value=S.bpm; $("snd").value=S.snd; $("mode").value=S.mode;
   ["metro","loop","chordOn"].forEach(id=>$(id).checked=!!S[id]);
+  $("melOn").checked=$("melOn2").checked=S.melOn!==false; if(!KEYS[S.key]) S.key="C"; $("key").value=S.key; $("melSnd").value=S.melSnd==="piano"?"piano":"lead"; if(!["num","let","both","none"].includes(S.melText)) S.melText="num"; $("melText").value=S.melText;
   if(S.countBars===undefined) S.countBars=S.countin?1:0;
   $("countBars").value=String(S.countBars); $("cues").checked=$("cues2").checked=!!S.cues; $("cueWhen").value=S.cueWhen||"before"; $("expCount").checked=S.expCount!==false;
 }
@@ -718,76 +778,90 @@ function usedChords(){
 }
 const measCtx=document.createElement("canvas").getContext("2d");
 function textW(t,size){measCtx.font="700 "+size+"px 'Segoe UI','Helvetica Neue',Arial,sans-serif"; return measCtx.measureText(t).width;}
-function scoreSVG(){
-  const W=1200, M=50, n=beatsN(), [num,den]=S.ts.split("/"), PRE=96, FS=n>6?17:22;
-  /* label chord per baris: posisi x & ruang yang tersedia sampai label berikutnya */
+function scoreSVG(opt){
+  opt=opt||{};
+  const mini=!!opt.mini, BL=opt.bars||S.bars.map((_,i)=>i);
+  const W=mini?640:1200, M=mini?14:50, n=beatsN(), [num,den]=S.ts.split("/"), FS=n>6?17:22;
+  const K=keyInfo(), melOf=b=>(S.mel&&S.mel[b])||[];
+  const anyMel=S.bars.some((_,b)=>melOf(b).length)||(mini&&BL.some(b=>melOf(b).length));
+  const ksN=anyMel||mini?Math.abs(K.sf):0, KSW=ksN?ksN*11+8:0, PRE=96+KSW;
   /* susun bar ke baris; bagian baru (Intro, Verse, …) mulai di baris baru */
   const layout=bpl=>{const out=[]; let cur=[];
-    S.bars.forEach((_,b)=>{if(cur.length&&(cur.length>=bpl||(S.secBreak!==false&&secOf(b)))){out.push(cur);cur=[];} cur.push(b);});
+    BL.forEach(b=>{if(cur.length&&(cur.length>=bpl||(S.secBreak!==false&&secOf(b)))){out.push(cur);cur=[];} cur.push(b);});
     if(cur.length) out.push(cur); return out;};
+  /* label chord per baris: posisi x & ruang yang tersedia sampai label berikutnya */
   const labelsOf=(line,bpl)=>{
     const barW=(W-2*M-PRE)/bpl, bw=(barW-24)/n, out=[], cnt=line.length;
     for(let j=0;j<cnt;j++){const b=line[j]; for(let k=0;k<n;k++){
-      const p=parseCell(S.bars[b][k])||(b===0&&k===0?chordAt(0,0):null);
+      const p=parseCell(S.bars[b][k])||(k===0&&(b===0||(mini&&j===0))?chordAt(b,0):null);
       if(p) out.push({b,k,x:M+PRE+j*barW+14+(k+.5)*bw-8,name:padName(p)});
     }}
     const endX=M+PRE+barW*cnt;
     out.forEach((l,i)=>l.avail=(i+1<out.length?out[i+1].x:endX+4)-l.x-10);
     return out;
   };
-  const fits=bpl=>layout(bpl).every(line=>labelsOf(line,bpl).every(l=>textW(l.name,FS*.8)<=l.avail));
-  /* otomatis: bar per baris sebanyak mungkin selama nama chord tidak bertabrakan */
-  const cand=n>=9?[2,1]:n>=6?[3,2,1]:[4,3,2];
-  const bpl=+S.bpl||cand.find(fits)||cand[cand.length-1], lines=layout(bpl);
+  const innerOf=bpl=>(W-2*M-PRE)/bpl-24;
+  const fits=bpl=>layout(bpl).every(line=>labelsOf(line,bpl).every(l=>textW(l.name,FS*.8)<=l.avail)&&line.every(b=>melNeed(b,K)<=innerOf(bpl)));
+  /* otomatis: bar per baris sebanyak mungkin selama chord & not tidak bertabrakan */
+  const cand=n>=9?[2,1]:n>=6?[3,2,1]:[4,3,2,1];
+  const bpl=mini?1:(+S.bpl||cand.find(fits)||cand[cand.length-1]), lines=layout(bpl);
   const title=(S.title||"").trim()||"Progresi Chord";
-  let o="", y=0;
-  /* kepala */
-  o+='<rect width="'+W+'" height="120" fill="#17464f"/>';
-  o+='<text x="'+M+'" y="58" fill="#fff" font-size="38" font-weight="700">'+xesc(title)+'</text>';
-  o+='<text x="'+M+'" y="94" fill="#cfe0e0" font-size="20">Birama '+S.ts+'   ·   '+(den==="8"?"♪":"♩")+' = '+S.bpm+'   ·   '+S.bars.length+' bar</text>';
-  const lg=document.querySelector("header .brand svg"), lp=lg.querySelector("path").getAttribute("d");
-  o+='<svg x="'+(W-M-210)+'" y="28" width="210" height="46" viewBox="'+lg.getAttribute("viewBox")+'"><path fill="#fff" fill-rule="evenodd" d="'+lp+'"/></svg>';
-  o+='<text x="'+(W-M-105)+'" y="96" text-anchor="middle" fill="#cfe0e0" font-size="16">Dibuat oleh Tim Music One</text>';
-  y=150; const breaks=[0,150];
-  /* diagram chord */
-  const used=usedChords();
-  if(S.scDia!==false&&used.length){
-    const dw=96, dh=128, per=Math.floor((W-2*M+14)/(dw+14));
-    used.forEach((p,i)=>{
-      const fr=fretsOf(p); const cx=M+(i%per)*(dw+14), cy=y+Math.floor(i/per)*(dh+38); if(i%per===0) breaks.push(cy-6);
-      o+='<text x="'+(cx+dw*0.54)+'" y="'+(cy+20)+'" text-anchor="middle" fill="#17464f" font-size="21" font-weight="700">'+xesc(padName(p))+'</text>';
-      if(fr) o+=miniSVG(fr,p.r).replace('<svg ','<svg x="'+cx+'" y="'+(cy+22)+'" width="'+dw+'" height="'+dh+'" ');
-    });
-    y+=Math.ceil(used.length/per)*(dh+38)+10;
-  }
+  let o="", y=0; const breaks=[0];
+  if(!mini){
+    o+='<rect width="'+W+'" height="120" fill="#17464f"/>';
+    o+='<text x="'+M+'" y="58" fill="#fff" font-size="38" font-weight="700">'+xesc(title)+'</text>';
+    o+='<text x="'+M+'" y="94" fill="#cfe0e0" font-size="20">'+(anyMel?'Do = '+keyName(S.key||"C")+'   ·   ':'')+'Birama '+S.ts+'   ·   '+(den==="8"?"♪":"♩")+' = '+S.bpm+'   ·   '+S.bars.length+' bar</text>';
+    const lg=document.querySelector("header .brand svg"), lp=lg.querySelector("path").getAttribute("d");
+    o+='<svg x="'+(W-M-210)+'" y="28" width="210" height="46" viewBox="'+lg.getAttribute("viewBox")+'"><path fill="#fff" fill-rule="evenodd" d="'+lp+'"/></svg>';
+    o+='<text x="'+(W-M-105)+'" y="96" text-anchor="middle" fill="#cfe0e0" font-size="16">Dibuat oleh Tim Music One</text>';
+    y=150; breaks.push(150);
+    /* diagram chord */
+    const used=usedChords();
+    if(S.scDia!==false&&used.length){
+      const dw=96, dh=128, per=Math.floor((W-2*M+14)/(dw+14));
+      used.forEach((p,i)=>{
+        const fr=fretsOf(p); const cx=M+(i%per)*(dw+14), cy=y+Math.floor(i/per)*(dh+38); if(i%per===0) breaks.push(cy-6);
+        o+='<text x="'+(cx+dw*0.54)+'" y="'+(cy+20)+'" text-anchor="middle" fill="#17464f" font-size="21" font-weight="700">'+xesc(padName(p))+'</text>';
+        if(fr) o+=miniSVG(fr,p.r).replace('<svg ','<svg x="'+cx+'" y="'+(cy+22)+'" width="'+dw+'" height="'+dh+'" ');
+      });
+      y+=Math.ceil(used.length/per)*(dh+38)+10;
+    }
+  } else y=4;
   /* sistem / baris */
-  const G=10, barW=(W-2*M-PRE)/bpl, sysH=120;
+  const G=10, barW=(W-2*M-PRE)/bpl;
   for(let L=0;L<lines.length;L++){ breaks.push(y);
-    const line=lines[L], hasSec=line.some(b=>secOf(b)), extra=hasSec?26:0;
-    const top=y+48+extra, bot=top+4*G, mid=top+2*G, endX=M+PRE+barW*line.length;
+    const line=lines[L], hasSec=!mini&&line.some(b=>secOf(b)), extra=hasSec?26:0;
+    const mels=line.map((b,j)=>melOf(b).length?melDraw(b,M+PRE+j*barW,barW-24,K,mini?opt.sel:null):null), lineMel=mels.some(Boolean);
+    let minY=0,maxY=40; mels.forEach(m=>{if(m){minY=Math.min(minY,m.minY); maxY=Math.max(maxY,m.maxY);}});
+    const push=Math.max(0,-minY-8), lab=y+48+extra-14;
+    const top=y+48+extra+push, bot=top+4*G, mid=top+2*G, endX=M+PRE+barW*line.length;
     /* tanda bagian lagu: kotak berwarna di atas bar */
-    line.forEach((b,j)=>{const t=secOf(b); if(!t) return;
+    line.forEach((b,j)=>{const t=hasSec?secOf(b):""; if(!t) return;
       const bx=M+PRE+j*barW+(j===0?-PRE+2:2), tw=textW(t,16)+18;
       o+='<rect x="'+bx.toFixed(1)+'" y="'+(y+4)+'" width="'+tw.toFixed(1)+'" height="26" rx="5" fill="#206f78"/>';
       o+='<text x="'+(bx+9).toFixed(1)+'" y="'+(y+23)+'" font-size="16" font-weight="700" fill="#fff">'+xesc(t)+'</text>';
     });
     for(let i=0;i<5;i++) o+='<line x1="'+M+'" y1="'+(top+i*G)+'" x2="'+endX+'" y2="'+(top+i*G)+'" stroke="#17464f" stroke-width="1.4"/>';
     o+='<text x="'+(M+4)+'" y="'+(bot+3.5)+'" font-size="78" fill="#17464f" font-family="Segoe UI Symbol, Noto Music, Bravura, Arial Unicode MS, serif">𝄞</text>';
-    if(L===0){
-      o+='<text x="'+(M+70)+'" y="'+(top+G*2-2)+'" text-anchor="middle" font-size="27" font-weight="800" fill="#17464f" font-family="Georgia,serif">'+num+'</text>';
-      o+='<text x="'+(M+70)+'" y="'+(bot-1)+'" text-anchor="middle" font-size="27" font-weight="800" fill="#17464f" font-family="Georgia,serif">'+den+'</text>';
-    } else o+='<text x="'+(M+PRE-4)+'" y="'+(top-30)+'" text-anchor="end" font-size="13" fill="#6b7a7a">'+(line[0]+1)+'</text>';
+    /* tanda kunci (kres / mol) */
+    if(ksN){const pos=K.sf>0?[38,35,39,36,33,37,34]:[34,37,33,36,32,35,31];
+      for(let i=0;i<ksN;i++) o+=accSVG(K.sf>0?1:-1,M+62+i*11,top+(38-pos[i])*5,"#17464f");}
+    if(L===0&&!mini){
+      o+='<text x="'+(M+70+KSW)+'" y="'+(top+G*2-2)+'" text-anchor="middle" font-size="27" font-weight="800" fill="#17464f" font-family="Georgia,serif">'+num+'</text>';
+      o+='<text x="'+(M+70+KSW)+'" y="'+(bot-1)+'" text-anchor="middle" font-size="27" font-weight="800" fill="#17464f" font-family="Georgia,serif">'+den+'</text>';
+    } else if(mini) o+='<text x="'+M+'" y="'+(y+12)+'" font-size="13" font-weight="700" fill="#6b7a7a">Bar '+(line[0]+1)+'</text>';
+    else o+='<text x="'+(M+PRE-4)+'" y="'+(lab-16)+'" text-anchor="end" font-size="13" fill="#6b7a7a">'+(line[0]+1)+'</text>';
     o+='<line x1="'+M+'" y1="'+top+'" x2="'+M+'" y2="'+bot+'" stroke="#17464f" stroke-width="1.6"/>';
     /* nama chord: kecilkan bila ruang sempit, dan rapatkan bila masih belum muat */
     labelsOf(line,bpl).forEach(l=>{
-      let fs=FS, w=textW(l.name,fs), extra="";
-      if(w>l.avail){fs=Math.max(12,Math.floor(FS*l.avail/w)); w=textW(l.name,fs); if(w>l.avail) extra=' textLength="'+Math.max(8,l.avail).toFixed(1)+'" lengthAdjust="spacingAndGlyphs"';}
-      o+='<text x="'+l.x.toFixed(1)+'" y="'+(top-14)+'" font-size="'+fs+'" font-weight="700" fill="#17464f"'+extra+'>'+xesc(l.name)+'</text>';
+      let fs=FS, w=textW(l.name,fs), ex="";
+      if(w>l.avail){fs=Math.max(12,Math.floor(FS*l.avail/w)); w=textW(l.name,fs); if(w>l.avail) ex=' textLength="'+Math.max(8,l.avail).toFixed(1)+'" lengthAdjust="spacingAndGlyphs"';}
+      o+='<text x="'+l.x.toFixed(1)+'" y="'+lab+'" font-size="'+fs+'" font-weight="700" fill="#17464f"'+ex+'>'+xesc(l.name)+'</text>';
     });
     for(let j=0;j<line.length;j++){
-      const b=line[j];
-      const bx=M+PRE+j*barW, inner=barW-24, bw=inner/n;
-      for(let k=0;k<n;k++){
+      const b=line[j], bx=M+PRE+j*barW, inner=barW-24, bw=inner/n;
+      if(mels[j]) o+='<g transform="translate(0,'+top+')">'+mels[j].o+'</g>';
+      else for(let k=0;k<n;k++){
         const x=bx+14+(k+.5)*bw;
         o+='<line x1="'+(x-6)+'" y1="'+(mid+7)+'" x2="'+(x+6)+'" y2="'+(mid-7)+'" stroke="#17464f" stroke-width="5"/>';
       }
@@ -797,11 +871,25 @@ function scoreSVG(){
         o+='<rect x="'+(ex-4)+'" y="'+top+'" width="4" height="'+(4*G)+'" fill="#17464f"/>';
       } else o+='<line x1="'+ex+'" y1="'+top+'" x2="'+ex+'" y2="'+bot+'" stroke="#17464f" stroke-width="1.6"/>';
     }
-    y+=sysH+extra;
+    /* not angka di bawah paranada */
+    const mt=S.melText||"num";
+    if(lineMel&&mt!=="none"){
+      let ny=top+Math.max(72,maxY+28);
+      if(mt!=="let"){
+        o+='<text x="'+(M+4)+'" y="'+ny+'" font-size="12" fill="#6b7a7a">do='+xesc(keyName(S.key||"C"))+'</text>';
+        mels.forEach(m=>{if(m) o+=m.num(ny);});
+        if(mt==="both") ny+=30;
+      }
+      if(mt!=="num") mels.forEach(m=>{if(m) o+=m.lets(ny-(mt==="let"?2:0));});
+      y=ny+(mini?18:34);
+    } else y=top+Math.max(72,maxY+32);
   }
-  y+=10;
-  o+='<text x="'+(W/2)+'" y="'+(y+14)+'" text-anchor="middle" font-size="13" fill="#6b7a7a">Dibuat dengan Chord per Birama · Music One</text>';
-  const H=Math.round(y+34); breaks.push(H); scoreSVG.breaks=[...new Set(breaks.map(Math.round))].sort((a,b)=>a-b);
+  if(!mini){
+    y+=10;
+    o+='<text x="'+(W/2)+'" y="'+(y+14)+'" text-anchor="middle" font-size="13" fill="#6b7a7a">Dibuat dengan Chord per Birama · Music One</text>';
+  }
+  const H=Math.round(mini?y:y+34); breaks.push(H);
+  if(!mini) scoreSVG.breaks=[...new Set(breaks.map(Math.round))].sort((a,b)=>a-b);
   return '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif"><rect width="'+W+'" height="'+H+'" fill="#fff"/>'+o+'</svg>';
 }
 function renderScore(){$("score").innerHTML=scoreSVG();}
@@ -1072,7 +1160,7 @@ function buildMidi(){
   const uspq=Math.round(60e6/S.bpm*(den===8?2:1));
   const t0=[meta(0,0x03,txtBytes((S.title||"Progresi Chord").trim()||"Progresi Chord")),
     meta(0,0x51,[(uspq>>16)&255,(uspq>>8)&255,uspq&255]),
-    meta(0,0x58,[num,Math.log2(den),den===8?12:24,8])];
+    meta(0,0x58,[num,Math.log2(den),den===8?12:24,8]), meta(0,0x59,[(KEYS[S.key]||KEYS.C)[2]&255,0])];
   if(C) t0.push(meta(0,0x06,txtBytes("Hitungan awal")));
   /* pukulan chord */
   const strikes=[]; let lastName="";
@@ -1107,6 +1195,12 @@ function buildMidi(){
   });
   ev.unshift(meta(0,0x03,txtBytes(S.snd==="piano"?"Piano":"Gitar")));
   const tracks=[track(t0),track(ev)];
+  syncMel();
+  if(S.melOn!==false&&S.mel.some(m=>m.length)){
+    const mt=[meta(0,0x03,txtBytes("Melodi")),{t:0,o:1,b:[0xC1,S.melSnd==="piano"?0:73]}];
+    S.mel.forEach((m,b)=>{let on=0; m.forEach(x=>{ if(x.p!==null){const t=off+b*n*bt+on*120; mt.push({t,o:2,b:[0x91,x.p,100]}); mt.push({t:t+x.d*120-2,o:0,b:[0x81,x.p,0]});} on+=x.d;});});
+    tracks.push(track(mt));
+  }
   if($("midMetro").checked||C){
     const mt=[meta(0,0x03,txtBytes("Metronom"))], last=$("midMetro").checked?C*n+S.bars.length*n:C*n;
     for(let i=0;i<last;i++){const t=i*bt, lv=level(i%n), nt=lv===2?76:77; mt.push({t,o:2,b:[0x99,nt,lv===2?110:lv===1?90:70]}); mt.push({t:t+bt/4,o:0,b:[0x89,nt,0]});}
@@ -1124,12 +1218,301 @@ $("bpl").onchange=()=>{S.bpl=+$("bpl").value;persist();};
 $("scDia").onchange=()=>{S.scDia=$("scDia").checked;persist();};
 $("secBreak").checked=S.secBreak!==false; $("secBreak").onchange=()=>{S.secBreak=$("secBreak").checked;persist();};
 
+/* ---------- MELODI ---------- */
+/* satuan durasi = not 1/16. 16 = not penuh, 8 = 1/2, 4 = 1/4, 2 = 1/8, 1 = 1/16; 24/12/6/3 = bertitik */
+var MEL_D=[1,2,3,4,6,8,12,16,24];
+function capOf(){const [a,b]=S.ts.split("/").map(Number); return a*16/b;}
+function beatLen(){return S.ts.endsWith("/8")?2:4;}
+function syncMel(){
+  const cap=capOf(), src=Array.isArray(S.mel)?S.mel:[];
+  S.mel=S.bars.map((_,i)=>{
+    const m=Array.isArray(src[i])?src[i]:[]; let s=0;
+    return m.filter(x=>x&&MEL_D.includes(x.d)&&(x.p===null||(Number.isInteger(x.p)&&x.p>=36&&x.p<=96))).filter(x=>(s+=x.d)<=cap).map(x=>({p:x.p,d:x.d}));
+  });
+}
+const LPC=[0,2,4,5,7,9,11], MAJ=[0,2,4,5,7,9,11], LET="CDEFGAB";
+/* nada dasar: [pc tonika, huruf tonika (C=0..B=6), jumlah kres(+)/mol(-)] */
+const KEYS={"C":[0,0,0],"G":[7,4,1],"D":[2,1,2],"A":[9,5,3],"E":[4,2,4],"B":[11,6,5],"F#":[6,3,6],"F":[5,3,-1],"Bb":[10,6,-2],"Eb":[3,2,-3],"Ab":[8,5,-4],"Db":[1,1,-5]};
+const keyName=k=>k.replace("#","♯").replace(/b$/,"♭");
+function keyInfo(){
+  const [pc,L,sf]=KEYS[S.key]||KEYS.C;
+  const sc=MAJ.map((iv,i)=>{const letter=(L+i)%7, p=(pc+iv)%12; return {letter,pc:p,alter:((p-LPC[letter]+18)%12)-6};});
+  const ksAlt=Array(7).fill(0); sc.forEach(s=>ksAlt[s.letter]=s.alter);
+  return {pc,L,sf,sc,ksAlt,dT:4*7+L};   /* do = oktaf 4 (C4 … B4) */
+}
+/* ejaan not: huruf, kres/mol, oktaf, posisi di paranada (d), angka (1–7), titik oktaf */
+function spell(m,K){
+  const pc=m%12; let i=K.sc.findIndex(s=>s.pc===pc), ch=0;
+  if(i<0){
+    const up={i:K.sc.findIndex(s=>s.pc===(pc+11)%12),ch:1}, dn={i:K.sc.findIndex(s=>s.pc===(pc+1)%12),ch:-1};
+    let pick=K.sf>0||(K.sf===0&&pc!==10&&pc!==3)?up:dn;
+    if(Math.abs(K.sc[pick.i].alter+pick.ch)>1) pick=pick===up?dn:up;
+    i=pick.i; ch=pick.ch;
+  }
+  const s=K.sc[i], letter=s.letter, alter=s.alter+ch, oct=Math.floor((m-alter)/12)-1, d=oct*7+letter;
+  return {letter,alter,oct,d,deg:i+1,ch,dots:Math.floor((d-K.dT)/7)};
+}
+const accTxt=a=>a>1?"𝄪":a===1?"♯":a===-1?"♭":a<-1?"𝄫":"";
+const melName=(m,K)=>{const s=spell(m,K); return LET[s.letter]+accTxt(s.alter)+s.oct;};
+const numLabel=(m,K)=>{const s=spell(m,K); return s.deg+(s.dots>0?"̇".repeat(s.dots):s.dots<0?"̣".repeat(-s.dots):"")+(s.ch>0?"♯":s.ch<0?"♭":"");};
+const DUR_TXT={16:"1",24:"1 bertitik",8:"1/2",12:"1/2 bertitik",4:"1/4",6:"1/4 bertitik",2:"1/8",3:"1/8 bertitik",1:"1/16"};
+function fmtBeats(x){const bl=beatLen(), v=x/bl, w=Math.floor(v), f=v-w, fr=f===.5?"½":f===.25?"¼":f===.75?"¾":"";
+  return (w||!fr?w:"")+(w&&fr?" ":"")+fr+" ketukan";}
+
+/* ---- suara melodi (terpisah dari chord, tidak ikut terpotong saat chord dipukul) ---- */
+let melV=[];
+function melNote(m,t,dur,v){
+  const f=440*Math.pow(2,(m-69)/12), g=ctx.createGain(), end=t+Math.max(.06,dur);
+  if(S.melSnd==="piano"){
+    const o1=ctx.createOscillator(), o2=ctx.createOscillator(), g2=ctx.createGain();
+    o1.type="triangle"; o1.frequency.value=f; o2.type="sine"; o2.frequency.value=f*2; g2.gain.value=.3;
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.3*v,t+.008); g.gain.setTargetAtTime(.12*v,t+.01,.3); g.gain.setTargetAtTime(0,end,.06);
+    o1.connect(g); o2.connect(g2).connect(g); o1.start(t); o2.start(t); o1.stop(end+.5); o2.stop(end+.5);
+  } else {
+    const o=ctx.createOscillator(), o2=ctx.createOscillator(), g2=ctx.createGain(), lfo=ctx.createOscillator(), lg=ctx.createGain();
+    o.type="triangle"; o.frequency.value=f; o2.type="sine"; o2.frequency.value=f; g2.gain.value=.6;
+    lfo.frequency.value=5.2; lg.gain.setValueAtTime(0,t); lg.gain.linearRampToValueAtTime(f*.006,t+Math.min(.35,dur)); lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.26*v,t+.025); g.gain.setTargetAtTime(.2*v,t+.03,.15); g.gain.setTargetAtTime(0,end,.04);
+    o.connect(g); o2.connect(g2).connect(g); [o,o2,lfo].forEach(x=>{x.start(t); x.stop(end+.4);});
+  }
+  g.connect(master); melV.push(g); if(melV.length>64) melV.splice(0,melV.length-64);
+}
+function stopMel(t){melV.forEach(g=>{try{g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0,t,.02);}catch(e){}}); melV=[];}
+/* bunyikan not melodi yang mulai di ketukan k pada bar b */
+function melBeat(t,b,k){
+  const m=(S.mel||[])[b]; if(!m||!m.length) return;
+  const bl=beatLen(), s16=60/S.bpm/bl; let on=0;
+  for(const x of m){ if(on>=k*bl&&on<(k+1)*bl&&x.p!==null) melNote(x.p,t+(on-k*bl)*s16,x.d*s16*.94,1); on+=x.d; }
+}
+
+/* ---- gambar melodi di paranada (dipakai partitur & pratinjau) ---- */
+function melItems(b){
+  const cap=capOf(), m=(S.mel&&S.mel[b])||[], items=[]; let on=0;
+  m.forEach((x,i)=>{items.push({on,d:x.d,p:x.p,i}); on+=x.d;});
+  while(on<cap){const v=[16,8,4,2,1].find(v=>on%v===0&&on+v<=cap); items.push({on,d:v,p:null,auto:true}); on+=v;}
+  return items;
+}
+/* per ketukan: dibagi 1, 2, atau 4 (not angka: 0 / 1 / 2 garis bawah) */
+function beatGrids(items){
+  const bl=beatLen(), n=capOf()/bl, opts=bl===4?[1,2,4]:[1,2], out=[];
+  for(let k=0;k<n;k++){const s=k*bl, ons=items.filter(it=>it.on>=s&&it.on<s+bl).map(it=>it.on-s);
+    out.push(opts.find(g=>ons.every(o=>o%(bl/g)===0))||opts[opts.length-1]);}
+  return out;
+}
+function melNeed(b,K){
+  const m=(S.mel&&S.mel[b])||[]; if(!m.length) return 0;
+  const items=melItems(b), cap=capOf(); let need=0;
+  items.forEach(it=>{const w=it.p===null?16:(spell(it.p,K).ch?30:20); need=Math.max(need,w*cap/it.d);});
+  const gr=beatGrids(items); gr.forEach(g=>need=Math.max(need,gr.length*g*15));
+  return need;
+}
+function groupStarts(){const bl=beatLen(); return bl===4?Array.from({length:capOf()/4},(_,i)=>i*4):TS[S.ts].acc.map(a=>a*bl);}
+const ACC_SHAPE={
+  1:(x,y)=>'<path d="M'+(x-2.4)+' '+(y-9)+'V'+(y+11)+'M'+(x+2.4)+' '+(y-11)+'V'+(y+9)+'" stroke-width="1.3"/><path d="M'+(x-5)+' '+(y-1.5)+'L'+(x+5)+' '+(y-4.5)+'M'+(x-5)+' '+(y+5)+'L'+(x+5)+' '+(y+2)+'" stroke-width="2.6"/>',
+  "-1":(x,y)=>'<path d="M'+(x-3)+' '+(y-15)+'V'+(y+4)+'C'+(x+1)+' '+(y+1)+' '+(x+7)+' '+(y-3)+' '+(x+5)+' '+(y-6)+'C'+(x+3)+' '+(y-9)+' '+(x-1)+' '+(y-5)+' '+(x-3)+' '+(y-3)+'" stroke-width="1.7" fill="none"/>',
+  0:(x,y)=>'<path d="M'+(x-3)+' '+(y-12)+'V'+(y+5)+'M'+(x+3)+' '+(y-5)+'V'+(y+12)+'" stroke-width="1.3"/><path d="M'+(x-3)+' '+(y-1)+'L'+(x+3)+' '+(y-3)+'M'+(x-3)+' '+(y+5)+'L'+(x+3)+' '+(y+3)+'" stroke-width="2.4"/>'
+};
+const accSVG=(a,x,y,col)=>{const f=ACC_SHAPE[String(Math.max(-1,Math.min(1,a)))]; return '<g stroke="'+col+'" fill="none">'+f(x,y)+'</g>';};
+function restSVG(d,x,col){
+  const base=d>=24?16:d===12?8:d===6?4:d===3?2:d, dot=base!==d;
+  let o="";
+  if(base===16) o='<rect x="'+(x-6)+'" y="10" width="12" height="5" fill="'+col+'"/>';
+  else if(base===8) o='<rect x="'+(x-6)+'" y="15" width="12" height="5" fill="'+col+'"/>';
+  else if(base===4) o='<path d="M'+(x-3)+' 4L'+(x+3)+' 12L'+(x-2)+' 18L'+(x+3)+' 25Q'+(x-6)+' 22 '+(x-1)+' 33" stroke="'+col+'" stroke-width="2.4" fill="none" stroke-linejoin="round"/>';
+  else {
+    o='<circle cx="'+(x-2.5)+'" cy="14" r="2.6" fill="'+col+'"/><path d="M'+(x-2.5)+' 15.5Q'+(x+1)+' 17 '+(x+4)+' 12L'+(x-2)+' '+(base===1?36:30)+'" stroke="'+col+'" stroke-width="1.6" fill="none"/>';
+    if(base===1) o+='<circle cx="'+(x-4.5)+'" cy="22" r="2.6" fill="'+col+'"/><path d="M'+(x-4.5)+' 23.5Q'+(x-1)+' 25 '+(x+2.2)+' 20" stroke="'+col+'" stroke-width="1.6" fill="none"/>';
+  }
+  if(dot) o+='<circle cx="'+(x+9)+'" cy="15" r="2" fill="'+col+'"/>';
+  return o;
+}
+/* hasil: svg (y relatif terhadap garis paling atas), batas atas/bawah, dan fungsi baris not angka */
+function melDraw(b,bx,inner,K,sel){
+  const cap=capOf(), bl=beatLen(), items=melItems(b), grids=beatGrids(items), gs=groupStarts();
+  const X=it=>{const k=Math.floor(it.on/bl), st=bl/grids[k]; return bx+14+((it.on+st/2)/cap)*inner;};
+  const accS={}; let o="", minY=0, maxY=40;
+  const colOf=it=>it.auto?"#9aaeae":(sel!==null&&sel!==undefined&&it.i===sel)?"#e8890c":"#17464f";
+  items.forEach(it=>{
+    it.x=X(it); it.g=gs.filter(v=>v<=it.on).length;
+    if(it.p===null) return;
+    const sp=spell(it.p,K); it.sp=sp; it.y=(38-sp.d)*5;
+    const cur=accS[sp.d]!==undefined?accS[sp.d]:K.ksAlt[sp.letter];
+    it.acc=sp.alter!==cur?sp.alter:null; accS[sp.d]=sp.alter;
+    it.up=sp.d<34;
+  });
+  /* grup beam: not 1/8 & 1/16 berurutan dalam satu ketukan / kelompok */
+  const runs=[]; let run=[];
+  items.forEach(it=>{const ok=it.p!==null&&it.d<4;
+    if(ok&&run.length&&run[run.length-1].g===it.g) run.push(it); else {if(run.length>1) runs.push(run); run=ok?[it]:[];}});
+  if(run.length>1) runs.push(run);
+  runs.forEach(r=>{const avg=r.reduce((s,it)=>s+it.sp.d,0)/r.length, up=avg<34;
+    const by=up?Math.min(...r.map(it=>it.y))-31:Math.max(...r.map(it=>it.y))+31;
+    r.forEach(it=>{it.up=up; it.beamY=by; it.run=r;});});
+  items.forEach(it=>{
+    const col=colOf(it), x=it.x;
+    if(it.p===null){o+=restSVG(it.d,x,col); return;}
+    const y=it.y, d=it.sp.d, base=it.d>=24?16:it.d===12?8:it.d===6?4:it.d===3?2:it.d, dotted=base!==it.d;
+    /* garis bantu */
+    for(let dd=28;dd>=d;dd-=2){const ly=(38-dd)*5; o+='<line x1="'+(x-10)+'" y1="'+ly+'" x2="'+(x+10)+'" y2="'+ly+'" stroke="#17464f" stroke-width="1.4"/>';}
+    for(let dd=40;dd<=d;dd+=2){const ly=(38-dd)*5; o+='<line x1="'+(x-10)+'" y1="'+ly+'" x2="'+(x+10)+'" y2="'+ly+'" stroke="#17464f" stroke-width="1.4"/>';}
+    if(it.acc!==null) o+=accSVG(it.acc,x-15,y,col);
+    const hollow=base>=8;
+    o+='<ellipse cx="'+x.toFixed(1)+'" cy="'+y+'" rx="6.2" ry="4.4" transform="rotate(-20 '+x.toFixed(1)+' '+y+')" fill="'+(hollow?"#fff":col)+'" stroke="'+col+'" stroke-width="'+(hollow?1.8:1)+'"/>';
+    if(dotted) o+='<circle cx="'+(x+11)+'" cy="'+(d%2===0?y-5:y)+'" r="2" fill="'+col+'"/>';
+    minY=Math.min(minY,y-6); maxY=Math.max(maxY,y+6);
+    if(base<16){
+      const sx=it.up?x+5.6:x-5.6, ey=it.beamY!==undefined?it.beamY:(it.up?y-32:y+32);
+      o+='<line x1="'+sx.toFixed(1)+'" y1="'+y+'" x2="'+sx.toFixed(1)+'" y2="'+ey+'" stroke="'+col+'" stroke-width="1.5"/>';
+      minY=Math.min(minY,ey-2); maxY=Math.max(maxY,ey+2); it.sx=sx;
+      if(it.beamY===undefined&&base<4){
+        for(let f=0;f<(base===1?2:1);f++){const fy=it.up?ey+f*7:ey-f*7, s=it.up?1:-1;
+          o+='<path d="M'+sx.toFixed(1)+' '+fy+'c1 '+(7*s)+' 10 '+(9*s)+' 8 '+(19*s)+'" stroke="'+col+'" stroke-width="2" fill="none"/>';}
+      }
+    }
+  });
+  /* beam */
+  runs.forEach(r=>{
+    const up=r[0].up, by=r[0].beamY, h=4.5, col="#17464f", bar=(x1,x2,yy)=>'<rect x="'+Math.min(x1,x2).toFixed(1)+'" y="'+(up?yy:yy-h)+'" width="'+Math.abs(x2-x1).toFixed(1)+'" height="'+h+'" fill="'+col+'"/>';
+    o+=bar(r[0].sx-.7,r[r.length-1].sx+.7,by);
+    const y2=up?by+7:by-7;
+    r.forEach((it,i)=>{ if(it.d!==1) return;
+      const nx=r[i+1], pv=r[i-1];
+      if(nx&&nx.d===1) o+=bar(it.sx-.7,nx.sx+.7,y2);
+      else if(!(pv&&pv.d===1)) o+=nx?bar(it.sx,it.sx+9,y2):bar(it.sx-9,it.sx,y2);
+    });
+  });
+  /* baris not angka */
+  const num=ny=>{
+    let s="";
+    grids.forEach((g,k)=>{
+      const st=bl/g, xs=[];
+      for(let i=0;i<g;i++){
+        const pos=k*bl+i*st, it=items.find(q=>q.on<=pos&&pos<q.on+q.d), x=bx+14+((pos+st/2)/cap)*inner, col=it?colOf(it):"#17464f";
+        xs.push(x);
+        if(!it||it.p===null){s+='<text x="'+x.toFixed(1)+'" y="'+ny+'" text-anchor="middle" font-size="18" font-weight="700" fill="'+col+'">0</text>'; continue;}
+        if(it.on!==pos){s+='<circle cx="'+x.toFixed(1)+'" cy="'+(ny-6)+'" r="2.2" fill="'+col+'"/>'; continue;}
+        const sp=it.sp;
+        s+='<text x="'+x.toFixed(1)+'" y="'+ny+'" text-anchor="middle" font-size="18" font-weight="700" fill="'+col+'">'+sp.deg+'</text>';
+        if(sp.ch>0) s+='<line x1="'+(x-6)+'" y1="'+(ny+2)+'" x2="'+(x+6)+'" y2="'+(ny-15)+'" stroke="'+col+'" stroke-width="1.5"/>';
+        if(sp.ch<0) s+='<line x1="'+(x-6)+'" y1="'+(ny-15)+'" x2="'+(x+6)+'" y2="'+(ny+2)+'" stroke="'+col+'" stroke-width="1.5"/>';
+        for(let j=0;j<sp.dots;j++) s+='<circle cx="'+x.toFixed(1)+'" cy="'+(ny-18-j*5)+'" r="1.9" fill="'+col+'"/>';
+        const u=g===1?0:g===2?1:2;
+        for(let j=0;j<-sp.dots;j++) s+='<circle cx="'+x.toFixed(1)+'" cy="'+(ny+6+u*4+3+j*5)+'" r="1.9" fill="'+col+'"/>';
+      }
+      const u=g===1?0:g===2?1:2;
+      for(let j=0;j<u;j++) s+='<line x1="'+(xs[0]-7).toFixed(1)+'" y1="'+(ny+5+j*4)+'" x2="'+(xs[xs.length-1]+7).toFixed(1)+'" y2="'+(ny+5+j*4)+'" stroke="#17464f" stroke-width="1.4"/>';
+    });
+    return s;
+  };
+  /* baris not huruf: nama not (C, D, F♯, B♭ …) di bawah tiap not */
+  const lets=ly=>items.filter(it=>it.p!==null).map(it=>'<text x="'+it.x.toFixed(1)+'" y="'+ly+'" text-anchor="middle" font-size="15" font-weight="700" fill="'+(colOf(it)==="#17464f"?"#206f78":colOf(it))+'">'+LET[it.sp.letter]+accTxt(it.sp.alter)+'</text>').join("");
+  return {o,minY,maxY,num,lets};
+}
+
+/* ---- editor melodi ---- */
+var melBar=0, melSel=null, melDur=4, melDot=false;
+$("key").innerHTML=Object.keys(KEYS).map(k=>'<option value="'+k+'">'+keyName(k)+(KEYS[k][2]?" ("+Math.abs(KEYS[k][2])+(KEYS[k][2]>0?"♯":"♭")+")":"")+'</option>').join("");
+const melSay=(t,err)=>{const m=$("melMsg"); m.className="msg"+(err?" err":""); m.textContent=t||"";};
+const curDur=()=>melDot?melDur*1.5:melDur;
+const melUsed=b=>((S.mel&&S.mel[b])||[]).reduce((s,x)=>s+x.d,0);
+function renderPiano(){
+  const K=keyInfo(), lo=55, hi=84, whites=[], blacks=[];
+  for(let m=lo;m<=hi;m++) ([1,3,6,8,10].includes(m%12)?blacks:whites).push(m);
+  const ww=100/whites.length;
+  const lab=m=>{const s=spell(m,K); if(s.ch) return ""; return s.deg+(s.dots>0?"̇".repeat(s.dots):s.dots<0?"̣".repeat(-s.dots):"");};
+  let h='<div class="kb">';
+  whites.forEach((m,i)=>{const s=spell(m,K); h+='<div class="wk'+(!s.ch&&s.deg===1?' do':'')+'" data-m="'+m+'" style="left:'+(i*ww)+'%;width:'+ww+'%"><b>'+lab(m)+'</b>'+NAMES[m%12]+(m%12===0?Math.floor(m/12)-1:"")+'</div>';});
+  blacks.forEach(m=>{const i=whites.indexOf(m-1)+1; h+='<div class="bk" data-m="'+m+'" style="left:'+(i*ww-ww*.31)+'%;width:'+(ww*.62)+'%">'+lab(m)+'</div>';});
+  $("piano").innerHTML=h+'</div>';
+}
+function renderMel(){
+  if(!$("melView")) return;
+  syncMel();
+  melBar=Math.max(0,Math.min(melBar,S.bars.length-1));
+  const m=S.mel[melBar], K=keyInfo(), cap=capOf(), used=melUsed(melBar), bl=beatLen();
+  if(melSel!==null&&!m[melSel]) melSel=null;
+  const p=chordAt(melBar,0), sec=secAt(melBar);
+  $("melInfo").textContent="Bar "+(melBar+1)+" dari "+S.bars.length+(sec?" · "+sec:"")+(p?" · "+padName(p):"");
+  $("melFill").textContent=used>=cap?"Bar penuh":used?"Terisi "+fmtBeats(used)+", sisa "+fmtBeats(cap-used):"Masih kosong ("+fmtBeats(cap)+")";
+  $("melView").innerHTML=scoreSVG({bars:[melBar],mini:true,sel:melSel});
+  $("melNotes").innerHTML=m.length?m.map((x,i)=>'<button data-i="'+i+'" class="'+(i===melSel?'sel':'')+'" title="Klik untuk memilih / mengubah not ini"><b>'+(x.p===null?"0":numLabel(x.p,K))+'</b><small>'+(x.p===null?"diam":melName(x.p,K))+' · '+DUR_TXT[x.d]+'</small></button>').join(""):'<span class="empty">Belum ada not di bar ini. Pilih durasi lalu klik tuts piano.</span>';
+  const selD=melSel!==null?m[melSel].d:null, room=cap-used+(selD||0);
+  $("durs").innerHTML=[16,8,4,2,1].map(d=>{const dd=melDot?d*1.5:d, ok=MEL_D.includes(dd)&&dd<=cap;
+    return '<button data-d="'+d+'" class="'+(d===melDur?'on':'')+'"'+(ok?'':' disabled')+'>'+DUR_TXT[d]+'<small>'+fmtBeats(dd)+'</small></button>';}).join("")+
+    '<label class="check"><input type="checkbox" id="melDot"'+(melDot?' checked':'')+'> Titik (×1½)</label>';
+  document.querySelectorAll("#bars .bar").forEach(el=>{const b=+el.dataset.b; el.classList.toggle("hasmel",!!(S.mel[b]&&S.mel[b].length)); el.classList.toggle("meledit",b===melBar);});
+  $("melPrev").disabled=melBar===0;
+}
+function flashKey(m){const k=document.querySelector('#piano [data-m="'+m+'"]'); if(k){k.classList.add("hit"); setTimeout(()=>k.classList.remove("hit"),160);}}
+function addNote(p){
+  syncMel(); const cap=capOf(), d=curDur(), m=S.mel[melBar];
+  if(p!==null){audio(); melNote(p,ctx.currentTime+.01,Math.min(.6,d*60/S.bpm/beatLen()),1); flashKey(p);}
+  if(melSel!==null&&m[melSel]){
+    m[melSel].p=p; melSel=melSel+1<m.length?melSel+1:null; melSay(""); persist(); renderMel(); return;
+  }
+  let used=melUsed(melBar);
+  if(used>=cap){
+    if(melBar+1>=S.bars.length) addBar();
+    melBar++; used=0; syncMel();
+  }
+  if(used+d>cap){melSay("Sisa bar "+(melBar+1)+" hanya "+fmtBeats(cap-used)+". Pilih durasi yang lebih pendek.",true); renderMel(); return;}
+  S.mel[melBar].push({p,d}); used+=d;
+  if(used>=cap) melSay("Bar "+(melBar+1)+" penuh. Not berikutnya otomatis masuk ke bar "+(melBar+2)+(melBar+1>=S.bars.length?" (bar baru akan dibuat otomatis).":"."));
+  else melSay("");
+  persist(); renderMel();
+}
+$("piano").addEventListener("pointerdown",e=>{const k=e.target.closest("[data-m]"); if(!k) return; e.preventDefault(); addNote(+k.dataset.m);});
+$("melRest").onclick=()=>addNote(null);
+$("durs").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b||b.disabled) return; const nd=+b.dataset.d;
+  if(melSel!==null){
+    const m=S.mel[melBar], dd=melDot?nd*1.5:nd, used=melUsed(melBar)-m[melSel].d;
+    if(used+dd>capOf()){melSay("Not ini tidak muat kalau dibuat "+DUR_TXT[dd]+" (sisa bar "+fmtBeats(capOf()-used)+").",true); return;}
+    m[melSel].d=dd; persist();
+  }
+  melDur=nd; melSay(""); renderMel();
+});
+$("durs").addEventListener("change",e=>{if(e.target.id!=="melDot") return; melDot=e.target.checked;
+  if(melSel!==null){const m=S.mel[melBar], x=m[melSel], base=[16,8,4,2,1].find(v=>v===x.d||v*1.5===x.d), dd=melDot?base*1.5:base, used=melUsed(melBar)-x.d;
+    if(MEL_D.includes(dd)&&used+dd<=capOf()){x.d=dd; persist();} else melSay("Titik tidak bisa dipakai untuk not ini (tidak muat).",true);}
+  renderMel();});
+$("melNotes").addEventListener("click",e=>{const b=e.target.closest("button"); if(!b) return; const i=+b.dataset.i;
+  melSel=melSel===i?null:i;
+  if(melSel!==null){const x=S.mel[melBar][i]; const base=[16,8,4,2,1].find(v=>v===x.d||v*1.5===x.d); melDur=base; melDot=base!==x.d; if(x.p!==null){audio(); melNote(x.p,ctx.currentTime+.01,.5,1); flashKey(x.p);}
+    melSay("Not "+(i+1)+" dipilih: klik tuts untuk mengganti nada, klik durasi untuk mengganti panjang, atau ⌫ untuk menghapus. Klik lagi untuk batal memilih.");}
+  else melSay("");
+  renderMel();});
+$("melDel").onclick=()=>{
+  syncMel(); let m=S.mel[melBar];
+  if(melSel!==null){m.splice(melSel,1); melSel=null;}
+  else if(m.length) m.pop();
+  else if(melBar>0){melBar--; m=S.mel[melBar]; m.pop();}
+  melSay(""); persist(); renderMel();
+};
+$("melClr").onclick=()=>{const m=S.mel[melBar]; if(!m.length) return; if(confirm("Hapus semua not melodi di bar "+(melBar+1)+"?")){S.mel[melBar]=[]; melSel=null; persist(); renderMel();}};
+$("melPrev").onclick=()=>{melBar=Math.max(0,melBar-1); melSel=null; melSay(""); renderMel();};
+$("melNext").onclick=()=>{if(melBar+1>=S.bars.length){if(!confirm("Ini bar terakhir. Tambah bar baru?")) return; addBar();} melBar++; melSel=null; melSay(""); renderMel();};
+$("melPlay").onclick=()=>{
+  stop(); audio(); const t0=ctx.currentTime+.08, spb=60/S.bpm, n=beatsN();
+  for(let k=0;k<n;k++){const t=t0+k*spb, c=parseCell(S.bars[melBar][k]);
+    if(S.metro) click(t,level(k));
+    if(S.chordOn&&(k===0||c)){const p=c||chordAt(melBar,0); if(p) strumAt(p,t,.75,"all");}
+    melBeat(t,melBar,k);}
+};
+$("key").onchange=()=>{S.key=$("key").value; persist(); renderPiano(); renderMel();};
+$("melSnd").onchange=()=>{S.melSnd=$("melSnd").value; persist();};
+const setMelOn=v=>{S.melOn=v; $("melOn").checked=$("melOn2").checked=v; persist();};
+$("melOn").onchange=()=>setMelOn($("melOn").checked);
+$("melOn2").onchange=()=>setMelOn($("melOn2").checked);
+function openMel(b){melBar=b; melSel=null; melSay(""); renderMel(); $("melCard").scrollIntoView({behavior:"smooth",block:"start"});}
+
+$("melText").onchange=()=>{S.melText=$("melText").value; persist();};
 /* ---------- simpan / buka lagu (file .json) ---------- */
-const PROJ_KEYS=["ts","bpm","snd","mode","metro","countBars","cues","cueWhen","expCount","loop","chordOn","title","bpl","scDia","secBreak"];
+const PROJ_KEYS=["ts","bpm","snd","mode","metro","countBars","cues","cueWhen","expCount","loop","chordOn","title","bpl","scDia","secBreak","key","melOn","melSnd","melText"];
 function projMsg(t,err){const m=$("projMsg"); m.className="msg"+(err?" err":""); m.textContent=t;}
 $("projSave").onclick=()=>{
   syncSecs(); const d={app:"MusicOne Chord per Birama",format:1,saved:new Date().toISOString()};
-  PROJ_KEYS.forEach(k=>{if(S[k]!==undefined) d[k]=S[k];}); d.secs=S.secs; d.bars=S.bars;
+  PROJ_KEYS.forEach(k=>{if(S[k]!==undefined) d[k]=S[k];}); d.secs=S.secs; d.bars=S.bars; syncMel(); if(S.mel.some(m=>m.length)) d.mel=S.mel;
   saveBlob(new Blob([JSON.stringify(d,null,1)],{type:"application/json"}),slug()+".json");
   projMsg("Tersimpan: "+slug()+".json ("+S.bars.length+" bar). Buka lagi dengan 📂 Buka lagu.");
 };
@@ -1142,7 +1525,8 @@ function importProj(txt,fname){
   PROJ_KEYS.forEach(k=>{if(d[k]!==undefined) S[k]=d[k];});
   S.ts=ts; S.bpm=Math.max(40,Math.min(220,Math.round(+S.bpm||90))); S.bars=bars;
   S.secs=Array.isArray(d.secs)?d.secs.map(x=>typeof x==="string"?x.slice(0,30):""):[];
-  syncSecs(); syncUI(); renderDots(); renderBars();
+  S.mel=Array.isArray(d.mel)?d.mel:[]; if(!KEYS[S.key]) S.key="C"; melBar=0; melSel=null;
+  syncSecs(); syncUI(); renderDots(); renderBars(); renderPiano(); renderMel();
   $("title").value=S.title||""; $("bpl").value=String(S.bpl||0); $("scDia").checked=S.scDia!==false; $("secBreak").checked=S.secBreak!==false;
   persist(); showNow(chordAt(0,0),false,0,0);
   projMsg("Dibuka: "+(fname||"file")+" — "+bars.length+" bar, "+ts+", "+S.bpm+" BPM.");
@@ -1171,7 +1555,7 @@ $("projText").onclick=()=>{
   projMsg("Teks lagu ditulis di kotak Isi cepat (sudah terpilih, tinggal Ctrl+C). Tempel lagi lalu klik \"Ganti semua bar\" untuk memuatnya.");
 };
 
-syncSecs(); syncUI(); renderBars(); loadCues(); renderDots(); showNow(chordAt(0,0),false,0,0); renderScore();
+syncSecs(); syncUI(); renderBars(); renderPiano(); renderMel(); loadCues(); renderDots(); showNow(chordAt(0,0),false,0,0); renderScore();
 </script>
 </body>
 </html>
