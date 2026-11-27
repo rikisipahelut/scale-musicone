@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chord per Birama</title>
+<style>
+:root{--bg:#eef2f2;--card:#fff;--ink:#17464f;--text:#1f2a2a;--muted:#6b7a7a;--line:#d5dede;--teal:#206f78;--deep:#17464f;--accent:#f39a1e;--red:#c4553a;--soft:#e8f0ef}
+@media (prefers-color-scheme:dark){:root{--bg:#121818;--card:#1c2424;--ink:#cfe6e6;--text:#e6eeee;--muted:#93a5a5;--line:#2d3838;--soft:#25302f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+header{background:var(--deep);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+header h1{margin:0;font-size:30px;font-weight:700}
+header p{margin:2px 0 0;color:#cfe0e0;font-size:14px}
+header .brand{text-align:center;flex:none}
+header .brand svg{width:150px;height:auto;display:block}
+header .brand small{color:#cfe0e0;font-size:11px}
+main{max-width:1200px;margin:20px auto;padding:0 16px 40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px}
+h2{margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+input[type=text],input[type=number],select{font:inherit;font-size:16px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text)}
+input[type=number]{width:84px}
+input[type=range]{width:180px;accent-color:var(--teal)}
+.btn{font:inherit;font-size:15px;padding:9px 16px;border-radius:8px;border:1px solid var(--teal);background:transparent;color:var(--ink);cursor:pointer}
+.btn:hover{background:var(--soft)}
+.btn.main{background:var(--teal);color:#fff;border-color:var(--teal);font-weight:700}
+.btn.danger{border-color:var(--red);color:var(--red)}
+#playBtn{font-size:18px;padding:12px 26px;min-width:150px}
+#playBtn.on{background:var(--red);border-color:var(--red)}
+.check{flex-direction:row;align-items:center;gap:8px;font-size:15px;color:var(--text);padding-bottom:9px}
+.check input{width:18px;height:18px;accent-color:var(--teal)}
+.hint{font-size:13px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+.msg{font-size:14px;margin:8px 0 0;min-height:1.2em;color:var(--muted)}
+.msg.err{color:var(--red)}
+/* sedang dimainkan */
+.now{display:grid;grid-template-columns:1fr 150px 1fr;gap:20px;align-items:center}
+.now .big{font-size:72px;font-weight:700;color:var(--ink);line-height:1}
+.now .lbl{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.now .next{font-size:34px;font-weight:700;color:var(--muted)}
+.now .dia{background:#fff;border-radius:10px;border:1px solid var(--line)}
+.now .dia svg{width:100%;height:auto;display:block}
+.score{margin-top:16px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.score svg{width:100%;height:auto;display:block}
+.dots{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.dot{width:26px;height:26px;border-radius:50%;background:var(--soft);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);font-weight:700}
+.dot.acc{border-color:var(--teal)}
+.dot.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.pos{font-size:15px;margin-top:8px;color:var(--muted)}
+/* bar */
+.bars{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--barw,280px),1fr));gap:12px}
+.bar{border:2px solid var(--line);border-radius:12px;padding:8px;background:var(--soft)}
+.bar.cur{border-color:var(--accent)}
+.bar .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.bar .num{font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;padding:2px 8px;border-radius:10px;background:var(--card);border:1px solid var(--line)}
+.bar .num:hover{border-color:var(--teal)}
+.bar .tools button{border:none;background:transparent;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 6px;border-radius:6px}
+.bar .tools button:hover{background:var(--card);color:var(--ink)}
+.bar .tools button.del:hover{color:var(--red)}
+.beats{display:grid;gap:4px}
+.cell{position:relative}
+.cell input{width:100%;font:inherit;font-size:17px;font-weight:700;text-align:center;padding:10px 2px 8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.cell input::placeholder{color:var(--muted);opacity:.45;font-weight:400}
+.cell input:focus{outline:2px solid var(--teal);outline-offset:0}
+.cell input.bad{border-color:var(--red);color:var(--red)}
+.cell.acc input{border-bottom:3px solid var(--teal)}
+.cell.now input{background:var(--accent);color:#fff;border-color:var(--accent)}
+.cell .bn{position:absolute;left:4px;top:1px;font-size:9px;color:var(--muted)}
+.cell.now .bn{color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center;font-size:13px;color:var(--muted)}
+.chips button{font:inherit;font-size:15px;font-weight:700;padding:5px 12px;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);cursor:pointer}
+.chips button:hover{border-color:var(--teal)}
+#quick{width:min(520px,100%)}
+@media (max-width:820px){.now{grid-template-columns:1fr 120px}.now .nx{grid-column:1/-1}.now .big{font-size:56px}}
+@media (max-width:420px){header h1{font-size:24px}header .brand svg{width:110px}.now .big{font-size:44px}}
+nav{position:sticky;top:0;z-index:2;background:var(--card);border-bottom:1px solid var(--line);padding:6px 16px 0;display:flex;flex-wrap:wrap;gap:4px}
+nav a{font-size:14px;padding:6px 14px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}
+nav a:hover{color:var(--text)}
+nav a[aria-current]{color:var(--teal);border-bottom-color:var(--teal);font-weight:bold}
+@media (prefers-color-scheme:dark){nav a[aria-current]{color:#7cc4c9;border-bottom-color:#7cc4c9}}
+</style>
+</head>
+<body>
+<nav><a href="index.html">Scale Chart</a><a href="chord-chart.html">Chord Chart</a><a href="lingkaran-kuint.html">Lingkaran Kuint</a><a href="jarak-nada.html">Jarak Nada</a><a href="metronom.html">Metronome</a><a href="strumming.html">Pola Strumming</a><a href="chord-finder.html">Pencari Chord</a><a href="chord-pad.html">Chord Pad</a><a href="chord-birama.html" aria-current="page">Chord Birama</a></nav>
+<header>
+  <div><h1>Chord per Birama</h1><p>Isi chord di tiap ketukan, atur birama &amp; tempo, lalu mainkan bersama metronom</p></div>
+  <div class="brand"><svg viewBox="0.019252300262451172 0.01285862922668457 4094.5419921875 876.9382934570312" role="img" aria-label="MusicOne"><path fill="#fff" fill-rule="evenodd" d="M1815.15 43.15c-5.36,0.18 -1.85,-0.23 -5.9,-1.9 -3.01,-1.24 -4.07,-0.62 -6.04,-2.7 -3.28,-3.47 -3.61,-8.2 -7.11,-10.85 -16.29,-12.31 -27.37,13.46 -21.46,23.82 2.07,3.62 5.82,6.03 11.39,6.31 12.85,0.64 7.11,-13.54 25.43,-4.06 -0.13,6.62 -1.37,2.54 -2.54,7.85 -0.42,1.92 -0.09,2.3 -0.9,4.19 -0.62,1.46 -1.12,1.2 -1.99,3.48 -1.15,3.01 -3.11,14.37 -5.09,16.14 -1.64,1.48 -5.98,0.5 -7.86,-0.25 -7.18,-2.84 -4.74,-5.72 -7.6,-10.35 -3.75,-6.08 -13.33,-8.51 -18.8,-4.13 -3.82,3.06 -5.54,5.99 -7.7,10.95 -3.37,7.74 3.09,20.2 12.31,20.29 3.45,0.03 6.72,-2.06 9.51,-3.46 4.23,-2.13 4,-3.62 10.84,-2.96 10.34,1 4.74,7.99 0.39,18.3 -1.79,4.23 -2.6,2.71 -3.14,7.06 -0.56,4.41 -0.54,6.26 -2.34,9.44 -5.35,0.56 -2.55,-0.11 -6.09,-1.54 -3.37,-1.36 -4.08,-0.08 -5.62,-3.43 -3.12,-6.79 0.29,-5.59 -6.22,-10.8 -20.02,-16.01 -33.29,28.16 -13.59,29.67 6.74,0.52 8.67,-1.56 13.45,-3.58 3.16,-1.33 11.42,-4.23 13.66,0.45 0.43,4.94 -0.71,3.58 -1.94,7.89 -1.03,3.59 -0.72,5.34 -2.13,8.6 -2.45,5.64 -1.46,10.29 -5.16,15.13 -3.33,0.32 -4.34,-0.4 -6.7,-1.23 -6.31,-2.2 -4.1,-6.11 -7.91,-10.06 -1.25,-1.29 -3.19,-3.09 -4.8,-4.07 -4.62,-2.8 -7.83,-4.05 -13.2,-0.86 -6.58,3.9 -12.48,15.17 -8.76,22.8 4.84,9.95 17.2,9.75 24.8,3.7 2.74,-2.18 6.36,-3.42 9.57,-0.82 4.02,3.25 1.14,6.25 0.36,10.7 -0.52,2.97 -6.98,20.94 -8.35,21.79 -8.98,5.56 -15,-11.53 -15.86,-12.56 -3.97,-4.71 -17.7,-4.39 -21.43,4.48 -6.58,15.63 0.92,27.55 12.35,25.23 1.5,-0.31 2.98,-1.28 5.03,-2.2 8.35,-3.77 -1.64,-3.59 16.42,-3.52 0.05,3.62 -8.27,32.26 -9.15,32.91 -2.23,1.62 -8.56,0.12 -10.5,-1.4l-1.77 -5.42c-0.55,-2.25 -0.81,-2.65 -2.11,-4.03 -1.18,-1.26 -6.4,-5.14 -7.98,-5.81 -14.97,-6.31 -19.39,12.16 -18.87,22.3 0.3,5.87 1.67,5.97 6.22,8.15 17.11,8.21 10.06,-7.86 24.56,-3.51 0.97,0.29 5.28,0.78 5.37,2.15 0.02,0.35 0.17,0.5 0.19,0.66 0.75,5.71 0.13,-4.66 0.18,1.37 0.03,2.88 -1.24,5.22 -2.15,7.64 -2.15,5.74 -4.69,18.11 -1.64,23.59 3.11,5.58 8.51,7.33 12.99,10.77 0.14,0.11 0.33,0.26 0.48,0.37l5.05 3.87c11.94,7.3 11.51,18.14 13.27,21.51 10.11,1.14 6.43,-4.61 6.51,-24.68l0.01 -30.42c-8.85,-0.27 -16.09,1.06 -15.21,-14.25 4.16,-1.9 2.78,-3.43 6.33,-5.01l1.17 -0.5c2.25,-0.83 3.77,-0.43 5.48,0.11 4.63,1.47 6.35,2.59 8.01,7.07 1.71,4.6 -1.69,6.02 -1.81,12.09l0.16 56.12c13.56,1.58 10.33,-1.78 10.3,-13.83l-0.18 -83.93c-8.29,-1.26 -7.75,1.48 -14.01,-5.44 -9.12,-10.09 6.8,-21.02 14.2,-14.96 10.02,8.2 3.47,12.19 3.08,17.34 -0.91,12.2 0.4,84.77 0.9,100.49l10.9 0.06 -0.87 -29c-0.3,-37.45 -1.62,-74.97 -1.5,-112.79 -6.89,-0.06 -10.61,0.75 -14.32,-7.39 -4.32,-9.49 11.21,-16.35 16.81,-10.47 8.04,8.45 2.1,8.77 1.21,16.07 -1.01,8.23 0.02,30.55 1.02,38.1 0.92,7 1.7,81.82 1.59,99.25 -0.03,4.51 -0.52,6.48 4.42,6.91 7.81,0.67 6.1,-3.21 5.98,-9.37l-0.6 -52.79c-0.11,-35.66 -2.74,-69.84 -2.62,-105.59 0.05,-14.71 3.28,-16.84 -5.71,-18.58 -4.68,-0.91 -7.32,-5.23 -7.03,-10.64 0.32,-5.97 7.69,-12.39 14.02,-10.1l4.45 4.39c0.46,2.49 0.8,4.81 0.75,7.37 -0.11,5.09 -0.5,3.68 -2.15,6.36 -1.48,2.38 -1.3,4.52 -1.21,7.4l0.99 14.62c1.8,11.45 2.08,15.56 2.09,27.61l0.03 65.79c0.16,14.58 1.43,29.3 0.86,43.86l0.91 27.57c2.81,0.24 5.18,2.35 7.53,0.81 3.18,-2.08 1.67,-11.43 1.6,-15.39l-0.75 -56.86c0.16,-42.01 -1.09,-83.93 -0.96,-125.9 0.14,-40.83 -3.44,-25.09 -11.97,-34.59 -9.2,-10.23 3.45,-20.72 9.7,-17.74 2.39,1.14 5.03,2.82 6.3,4.83 0.1,0.15 0.21,0.37 0.31,0.53 0.1,0.15 0.23,0.36 0.33,0.5 1.76,2.61 2.26,3.89 1.78,7.37 -0.67,4.91 -4.77,4.81 -4.62,10.54l2.18 116.28c-0.02,23.13 2.47,50.19 2.4,69.84 -0.05,12.89 -0.88,29.39 0.11,41.84l10.47 -0.04c-0.11,-25.34 1,-98.75 -1.08,-113.19 -2.27,-15.73 -2.07,-28.33 -2.12,-44.74 -0.03,-19.51 0.1,-38.97 -0.06,-58.48 -0.11,-14.09 -0.41,-35.26 -2.03,-49.18 -0.09,-0.74 -0.19,-2.25 -0.27,-2.86l-0.62 -2.85c-0.65,-2.27 -9.42,-1.18 -11.22,-8.9 -0.63,-2.72 -0.48,-6.17 0.66,-8.01 4.99,-7.98 13.06,-5.91 18.13,-0.54 4.87,5.15 1.71,10.42 -2.18,13.28 2.14,26.63 0.18,53.48 0.75,80.19 0.67,31.71 2.43,63.33 2.44,95.03l0.88 49.55c0.03,15.76 -1.06,35.67 -0.02,50.84l8.1 -0.1c0.8,-7.02 0.17,-11.29 1.57,-17.47 1.05,-4.63 3.97,-9.61 5.7,-13.7 8.12,-19.24 25.32,-31.41 43.51,-39.35 4.31,-1.88 6,-2.83 5.83,-8.6 -0.73,-24.93 -2.64,-28.91 -7.12,-51.2 -0.94,-4.66 -1.75,-2.61 -2.29,-7.32 -0.79,-6.87 -2.2,-9.87 -3.71,-16.28l-5.24 -14.08c-3.77,-8.55 -13.16,-45.47 -13.77,-54.89 -0.69,-10.67 4.98,-12.89 12.54,-17.23 2.12,-1.22 3.78,-2.4 5.89,-3.85 3.73,-2.58 7.85,-5.15 10.8,-8.61 3.2,-3.75 5.19,-7.53 7.67,-11.96 7.38,-13.19 6.26,-34.65 -0.82,-49.44 -3.26,-6.81 -13.03,-15.09 -19.31,-19.41 -1.33,-0.92 -1.56,-0.8 -3.22,-1.62l-10.4 -4.37c-11.39,-4.67 -31.22,-3.02 -41.86,2.66 -2.19,1.17 -4.61,2.19 -6.49,3.31 -9.15,5.44 -13.56,12.01 -17.43,21.67 -1.17,2.92 -3.93,10.17 -5.98,12.8z M1766.09 440.82l-0.24 32.56c0.4,7.81 5.34,3.52 11.07,3.68 3.25,0.09 6.71,0.71 11.41,0.6l49.55 -0.85c7.41,0.04 17.54,0.78 24.59,-0.03 0.03,-7.07 -0.19,-54.13 -1.45,-55.79 -1.95,-2.83 -4.85,-1.63 -9.32,-1.61 -4,0.02 -8.06,-0.41 -12.01,0.05 -2.65,0.31 -17.6,0.62 -21.26,0.41 -4.55,-0.26 -7.49,0.23 -11.43,0.18 -3.73,-0.05 -6.23,-1.62 -11.18,-0.71 -2.41,0.43 -2.55,1.15 -4.3,1.17 -4.96,0.07 -5.03,-4.79 -14.56,1.14l-0.98 -0.82c-2.69,-2.05 -9.84,-4.14 -10.04,2.07 -0.19,5.67 0.14,12.16 0.14,17.94z M1775.74 485.07l-3.9 -2.04c-2.4,-0.67 -5.01,-0.61 -5.59,2.54 -0.82,4.39 -0.3,50.39 -0.18,51.4 4.21,0.69 3.6,0.88 7.64,-0.63l1.97 -4.99c-0.06,10.01 7.21,6.99 13.98,5.61 0.92,-0.19 -1.31,-0.46 1.66,-0.13 0.29,0.03 1.49,0.46 1.67,0.5 2.71,0.71 5.17,0.54 8.32,0.5l62.73 0.79 -0.66 -46.64c0,-4.72 0.37,-6.28 -1.67,-9.18 -11.25,-0.71 -25.42,-0.3 -36.84,-0.06 -3.01,0.06 -5.94,-0.05 -8.96,-0.09 -9.18,-0.14 -5.19,0.6 -8.32,1.12 -3.96,0.67 -12.07,-3.52 -15.66,1.31 -5.01,-2.44 4.41,2.84 -1.76,-1.29 -2.54,-1.7 -12.12,-3.17 -14.46,1.28z M1762.97 654.22l-0.14 44.45c6.43,4.21 5.37,-0.8 12,0.57 10.56,2.19 77.02,0.94 92.53,0.91l0.01 -45.1 -1.83 -1.44c-4.21,-1.46 -64.69,0.69 -78,0.53 -4.77,-0.05 -7.79,-0.08 -12.42,0.47 -3.67,0.43 -7.49,-0.88 -12.14,-0.4z M1769.41 745.91c0.78,-1.55 0.35,-1.21 0.92,-2.81l2.23 -3.89c0.61,9.23 -0.6,7.39 19.03,7.31 4.05,-0.02 8.73,0.62 12.59,-0.24 4.05,-0.9 -1.04,-1.19 4.71,-0.55l13.13 -0.22c3.13,-0.39 43.3,1.77 45.53,-0.47 2.07,-2.09 0.73,-11.97 0.68,-15.05 -0.11,-8.3 0.5,-17.96 -0.8,-26.19 -10.61,-0.55 -22.14,0.05 -32.79,-0.05 -6.04,-0.06 -57.78,-0.41 -60.14,0.57l-2.79 1.54c-0.08,0.03 -0.32,0.09 -0.39,0.11 -2.4,0.39 -8.33,-5.91 -8.75,2.01l-0.26 34.29c0.23,4.93 2.27,4.27 7.11,3.66z M1776.42 648.54c1.93,1.3 7.87,1.17 10.77,0.42 3.96,-1.03 -0.38,-1.62 3.93,-0.68 2.94,0.64 4.61,1.64 10.99,0.97 3.45,-0.36 2.68,-1.19 4.92,-1.17 3.18,0.01 -0.07,1.19 10.55,1.07 6.99,-0.08 44.93,1.02 47.84,-0.4 2.23,-2.16 -0.12,-35.17 -0.07,-40.63 0.13,-12.65 -2.56,-6.07 -12.37,-7.42 -8.96,-1.24 -29.11,0.35 -30.99,0.12l-41.05 -0.49c-4.78,0.07 -5.19,0.7 -5.47,5.36 -0.41,6.93 -0.02,14.87 -0.12,21.94l-0.03 18.62c0.64,3.01 -0.3,0.85 1.08,2.29z M1769.66 790.37l1.28 -5.74c1.88,1.94 0.47,0.09 1.61,2.88 0.02,0.07 0.25,1.73 0.36,2.16 3.61,1.49 6.86,1.19 11.37,0.99l36.55 0.53c15.9,0.02 33.18,0.56 48.93,-0.11 0.7,-5.83 0.76,-35.5 -2.26,-40.32l-93.34 0.36c-3.23,0.43 -7.23,-0.5 -12.13,-0.33l-0.88 36.11c0.15,5.06 3.61,4.32 8.51,3.48z M1760.35 854.24c-0.01,9.96 -4.14,25.51 9.24,18.35 2.41,-1.29 -2.93,0.39 2.32,-1.13 2.24,3.62 3.2,2.57 9.11,2.56 5.45,-0.01 25.05,-0.62 28.78,0.1 7.14,1.38 14.32,-6.43 15.09,-6.85 2.27,-1.26 3.48,-0.44 6.21,-1.94 7.13,-3.91 7.65,-2.64 9.8,-6.49 11.58,-0.3 2.96,1.1 10.89,-2.08 5.65,-2.27 16.69,-3.18 18.09,-4.65 2.22,-2.32 0.92,-12.48 -0.07,-15.12 -4.28,-0.13 -8.11,0.57 -10.82,0.57 -3.73,0 -6.79,-0.05 -11.31,0.05l-25.02 0.63c-11.54,-1.14 -12.7,0.41 -17.61,-0.26l-31.33 -1c-1.23,1.45 -1.15,2.08 -1.85,4.05l-2.08 -2.52c-0.01,-0.02 -0.76,-1.33 -0.94,-1.55 -10.73,-0 -8.47,-3.07 -8.51,17.28z M1821.79 366.09l-0.09 38.33 -1.82 0.06c0.03,-4.8 -0.8,-49.25 -1.48,-50.61 -1.95,-2.19 -8.58,-0.71 -9.24,0.04 -2.01,2.25 -0.64,42.72 -0.68,47.92 -0.01,4.23 -0.52,7.41 0.83,10.71 9.08,2.96 10.93,-1.51 11.53,-1.96 2.62,1.33 4.3,3 8.2,3.18 2.74,0.13 2.86,-0.16 4.91,-0.67 1.9,-0.48 0.39,-0.52 2.17,-0.39 0.48,0.03 2.14,0.62 2.22,0.64 3.23,0.85 18.79,0.73 22.65,0.19l-0.08 -60.67c-4.01,-0.74 -22.24,0.23 -25.44,0.25 -15.08,0.09 -13.73,-5.48 -13.68,12.99z M1809.15 831.77l6.79 0.85c2.75,-0.04 5.81,-0.51 8.12,-0.46 4.69,0.1 9.09,1.39 15.21,0.55l27.07 0.43c4.28,-0.24 3.5,-1.38 3.5,-1.37l0.36 -32.78c-0.54,-7.12 -6.15,-2.58 -11.8,-3.21 -6.92,-0.77 -25.89,-0.4 -34.32,-0.4 -20.38,0 -15.15,-5.01 -15.63,28 -0.05,3.49 -0.55,5.88 0.7,8.39z M1855.76 592.94c1.92,1.74 7.48,5.15 8.41,-0.28l-0.09 -22.7c-0.14,-17.37 3.05,-26.49 -5.04,-26.4 -3.05,0.04 -2.41,0.74 -4.99,0.89 -2.56,0.15 -5.59,-0.94 -9.71,-0.87 -4.49,0.07 -4.73,0.66 -8.84,0.33 -3.71,-0.3 -7.02,-0.5 -10.74,-0.06 -1.45,11.35 -0.01,30 -0.25,42.35 -0.21,10.45 0.82,10.39 12.24,8.6 7.43,-1.16 12.82,1.98 19.01,-1.88z M4.24 868.79l139.47 0.88 1.59 -327.83c1.79,1.28 3.39,1.55 3.79,3.84l7.36 12.23c29.35,61.49 76.81,226.6 119.68,312.29l112.28 -0.1 127.77 -334.63 2.74 333.51 142.85 0.54 1.98 -578.2 -164.7 -0.85c-23.5,29.09 -143.55,333.12 -162.42,386.48 -20.28,-20.48 -29.92,-62.39 -42.25,-91.63 -21.56,-51.11 -110,-276.37 -122.88,-292.35l-166.07 -2.71c-6.43,25.52 -7.51,546.72 -1.17,578.55z M2613.98 622.2c-43.19,-245.93 251.07,-278.41 286.03,-82.94 42.27,236.36 -251.78,278.01 -286.03,82.94zm107.82 -337.15c-158.75,22.14 -274.34,147.37 -258.35,331.36 32.37,372.45 636.33,337.94 584.27,-79.36 -18.98,-152.13 -150.92,-276.41 -325.92,-252.01z M3780.78 592.16c23.17,-106.71 161.05,-98.12 172.93,0.83l-172.93 -0.83zm305.41 122.34l-146.29 0.32c-20.14,29.23 -43.37,53.62 -97.04,40.76 -34.27,-8.21 -61.72,-40.55 -61.67,-82.63l311.96 -0.05c28.96,-346.38 -396.76,-347.87 -448.8,-90.5 -48.38,239.24 186.47,354.88 347.93,263.14 35.61,-20.23 88.15,-74.86 93.91,-131.05z M3262.74 459.47l-1.77 -48.59 -139.37 -1.99 -1.75 460.27 141.47 -0.62c0.33,-73.47 0.16,-144.69 -0.06,-215.85 -0.22,-71.71 14.3,-125.97 87.13,-126.3 145.13,-0.66 61.79,240.57 88.2,342.48l134.11 0.71c8.7,-42.29 3.01,-155.46 2.99,-204.7 -0.05,-98.74 4.26,-248.16 -152.09,-261.87 -87.05,-7.63 -110.44,24.8 -158.86,56.46z M1058.74 820.02l3.14 49.39 136.05 -0.11 1.62 -457.34 -137.82 -2.91c-7.68,57.98 -2.06,151.94 -1.94,213.15 0.09,49.74 2.95,128.99 -83.26,129.87 -126.97,1.3 -78.27,-168.16 -88.75,-340.12l-136.75 -3.09c-6.38,95 -13.59,318.58 27.3,386.99 57.35,95.92 211.02,105.93 280.42,24.19z M1531.51 751.77c-18.07,11.56 -44.46,23.28 -77.06,14.03 -34.4,-9.76 -31.64,-24.66 -51.17,-49.29l-131.51 -0.36c-6.12,50.59 32.58,89.7 55.04,110.65 78.77,73.45 312.83,77.41 341.89,-66.77 24.51,-121.6 -76.83,-145.64 -167.97,-168.74 -162.04,-41.08 -60.95,-96.13 -5.08,-79.76 26.7,7.82 33.51,23.72 42.83,47.94l124.88 0.94c-2.84,-222.98 -404.01,-205.87 -378.58,7.23 5.61,46.99 27.34,65.12 59.51,83.3 86.53,48.89 197.97,21.32 187.21,100.84z M2409.88 702.86l-134.71 -0.01c-28.3,10.85 -28.57,68.5 -104.67,47.96 -105,-28.34 -77.68,-273.75 55.7,-219.69 33.73,13.67 20.39,19.83 42.88,44.15l142.86 1.03c-38.89,-255.17 -451.53,-231.41 -449.03,64.19 1.98,233.73 245.21,280.77 363.88,198.16 31.56,-21.97 85.53,-71.42 83.1,-135.8z"/></svg><small>Dibuat oleh Tim Music One</small></div>
+</header>
+<main>
+  <section class="card">
+    <div class="controls">
+      <button class="btn main" id="playBtn">▶ Mainkan</button>
+      <label>Birama<select id="ts"></select></label>
+      <label>Tempo (BPM) <span id="tsUnit"></span><span style="display:flex;gap:8px;align-items:center"><input type="range" id="bpmR" min="40" max="220"><input type="number" id="bpm" min="40" max="220"></span></label>
+      <label>Suara<select id="snd"><option value="guitar">Gitar</option><option value="piano">Piano</option></select></label>
+      <label>Cara main<select id="mode">
+        <option value="each">Strum tiap ketukan</option>
+        <option value="change">Hanya saat chord diisi (ditahan)</option>
+        <option value="bass">Bass di ketukan kuat + strum</option>
+      </select></label>
+    </div>
+    <div class="controls" style="margin-top:6px">
+      <label class="check"><input type="checkbox" id="metro" checked> Metronom</label>
+      <label class="check"><input type="checkbox" id="countin" checked> Hitungan awal 1 bar</label>
+      <label class="check"><input type="checkbox" id="loop" checked> Ulangi terus</label>
+      <label class="check"><input type="checkbox" id="chordOn" checked> Bunyi chord</label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="now">
+      <div><div class="lbl">Sekarang</div><div class="big" id="nowName">–</div>
+        <div class="dots" id="dots"></div><div class="pos" id="pos">Tekan ▶ Mainkan atau Spasi</div></div>
+      <div class="dia" id="nowDia"></div>
+      <div class="nx"><div class="lbl">Berikutnya</div><div class="next" id="nextName">–</div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Bar &amp; ketukan</h2>
+    <div class="bars" id="bars"></div>
+    <div class="controls" style="margin-top:14px">
+      <button class="btn main" id="addBar">+ Tambah bar</button>
+      <button class="btn danger" id="clearAll">Hapus semua</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <p class="hint">Ketik nama chord di kotak ketukan (G, Am, D/F#, Cmaj7, …). Kotak kosong = chord sebelumnya terus berlanjut. Klik kotak lalu klik chord di baris "Chord dipakai" untuk mengisi cepat. Klik nomor bar untuk mulai main dari bar itu. <b>⧉</b> menggandakan bar, <b>✕</b> menghapus bar. Semua tersimpan otomatis di browser ini.</p>
+  </section>
+
+  <section class="card">
+    <h2>Isi cepat</h2>
+    <div class="controls">
+      <label>Tulis per bar, pisahkan dengan "|"<input type="text" id="quick" placeholder="G | Am D | Bm | C D" autocomplete="off"></label>
+      <button class="btn main" id="quickRep">Ganti semua bar</button>
+      <button class="btn" id="quickAdd">Tambahkan di akhir</button>
+    </div>
+    <p class="msg" id="msg"></p>
+    <p class="hint">Satu chord dalam bar diletakkan di ketukan 1. Dua chord di 4/4 jatuh di ketukan 1 dan 3, empat chord tiap ketukan satu. Pakai titik "." untuk ketukan kosong, misalnya <b>G . . D</b>.</p>
+  </section>
+  <section class="card">
+    <h2>Ekspor partitur &amp; MIDI</h2>
+    <div class="controls">
+      <label>Judul lagu<input type="text" id="title" autocomplete="off" style="width:260px"></label>
+      <label>Bar per baris<select id="bpl"><option value="0">Otomatis</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+      <label class="check"><input type="checkbox" id="scDia" checked> Diagram chord gitar</label>
+    </div>
+    <div class="controls" style="margin-top:6px">
+      <button class="btn main" id="dlPng">⬇ Partitur PNG</button>
+      <button class="btn" id="dlSvg">⬇ Partitur SVG</button>
+      <button class="btn main" id="dlPdf">⬇ Partitur PDF</button>
+      <button class="btn main" id="dlMid">⬇ MIDI</button>
+      <label class="check"><input type="checkbox" id="midMetro"> Sertakan metronom di MIDI</label>
+    </div>
+    <p class="hint">MIDI berisi chord (sesuai Suara &amp; Cara main di atas), tempo, birama, dan nama chord sebagai marker. Bisa dibuka di MuseScore, FL Studio, Cubase, GarageBand, BandLab, dll.</p>
+    <div id="score" class="score"></div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const OPEN=[40,45,50,55,59,64];
+const NAMES=["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+const pretty=n=>n.replace(/b/g,"♭").replace(/#/g,"♯").replace(/^(.)♭/,"$1♭");
+const FORM=[
+ ["",[0,4,7],[],{},"Mayor (triad)"],
+ ["m",[0,3,7],[],{},"Minor (triad)"],
+ ["5",[0,7],[],{},"Power chord (root + kuint)"],
+ ["sus4",[0,5,7],[],{5:"4"},"Suspended 4: terts diganti kuart"],
+ ["sus2",[0,2,7],[],{2:"2"},"Suspended 2: terts diganti sekon"],
+ ["dim",[0,3,6],[],{},"Diminished (triad)"],
+ ["aug",[0,4,8],[],{},"Augmented (triad)"],
+ ["7",[0,4,10],[7],{},"Dominant 7"],
+ ["maj7",[0,4,11],[7],{},"Major 7"],
+ ["m7",[0,3,10],[7],{},"Minor 7"],
+ ["6",[0,4,7,9],[],{},"Mayor 6"],
+ ["m6",[0,3,7,9],[],{},"Minor 6"],
+ ["add9",[0,4,2],[7],{},"Mayor + 9 (tanpa 7)"],
+ ["m(add9)",[0,3,2],[7],{},"Minor + 9 (tanpa 7)"],
+ ["7sus4",[0,5,10],[7],{5:"4"},"Dominant 7 suspended 4"],
+ ["m7♭5",[0,3,6,10],[],{},"Half-diminished"],
+ ["dim7",[0,3,6,9],[],{9:"♭♭7"},"Diminished 7"],
+ ["m(maj7)",[0,3,11],[7],{},"Minor major 7"],
+ ["9",[0,4,10,2],[7],{},"Dominant 9"],
+ ["maj9",[0,4,11,2],[7],{},"Major 9"],
+ ["m9",[0,3,10,2],[7],{},"Minor 9"],
+ ["6/9",[0,4,9,2],[7],{},"Mayor 6 + 9"],
+ ["7♭9",[0,4,10,1],[7],{},"Dominant 7 ♭9"],
+ ["7#9",[0,4,10,3],[7],{3:"#9"},"Dominant 7 #9 (chord \"Hendrix\")"],
+ ["7♭5",[0,4,6,10],[],{},"Dominant 7 ♭5"],
+ ["7#5",[0,4,8,10],[],{},"Dominant 7 #5 (augmented 7)"],
+ ["maj7#11",[0,4,11,6],[7,2],{6:"#11"},"Major 7 #11 (Lydian)"],
+ ["11",[0,10,5,2],[7],{},"Dominant 11"],
+ ["m11",[0,3,10,5],[7,2],{},"Minor 11"],
+ ["13",[0,4,10,9],[7,2],{9:"13"},"Dominant 13"],
+ ["maj13",[0,4,11,9],[7,2],{9:"13"},"Major 13"],
+ ["m13",[0,3,10,9],[7,2,5],{9:"13"},"Minor 13"],
+ ["sus2sus4",[0,2,5,7],[],{2:"2",5:"4"},"Sus2 + sus4"],
+ ["7sus2",[0,2,10],[7],{2:"2"},"Dominant 7 suspended 2"]
+];
+function findShapes(root,fi,inv){
+  const [,req,opt]=FORM[fi], allowed=new Set(req.concat(opt)), iv=(st,f)=>(OPEN[st]+f-root+120)%12;
+  const found=new Map();
+  for(let p=0;p<=12;p++){
+    const lo=Math.max(1,p), hi=p===0?3:p+3, openOK=p<=2;
+    const opts=[0,1,2,3,4,5].map(st=>{const o=[-1]; if(openOK&&allowed.has(iv(st,0))) o.push(0); for(let f=lo;f<=hi;f++) if(allowed.has(iv(st,f))) o.push(f); return o;});
+    const cur=[-1,-1,-1,-1,-1,-1];
+    (function rec(st){
+      if(st<6){for(const f of opts[st]){cur[st]=f;rec(st+1);} cur[st]=-1; return;}
+      const snd=[0,1,2,3,4,5].filter(i=>cur[i]>=0); if(snd.length<3) return;
+      const first=snd[0], last=snd[snd.length-1];
+      if(!inv&&iv(first,cur[first])!==0) return;
+      const have=new Set(snd.map(i=>iv(i,cur[i]))); if(!req.every(x=>have.has(x))) return;
+      let interior=0; for(let i=first+1;i<last;i++) if(cur[i]<0) interior++;
+      const highMute=5-last; if(interior>1||highMute>1) return;
+      const fr=snd.filter(i=>cur[i]>0);
+      let span=0,fingers=0;
+      if(fr.length){
+        const fv=fr.map(i=>cur[i]), minF=Math.min(...fv); span=Math.max(...fv)-minF; if(span>3) return;
+        if(p>0&&minF!==lo) return;
+        const atMin=fr.filter(i=>cur[i]===minF); let barre=atMin.length>=2;
+        if(barre) for(let i=atMin[0];i<=atMin[atMin.length-1];i++) if(cur[i]<minF){barre=false;break;}
+        fingers=(barre?1:atMin.length)+fr.filter(i=>cur[i]>minF).length; if(fingers>4) return;
+      } else if(p>0) return;
+      const cnt={}; snd.forEach(i=>{const v=iv(i,cur[i]);cnt[v]=(cnt[v]||0)+1;});
+      const opens=snd.filter(i=>cur[i]===0).length, maxF=fr.length?Math.max(...fr.map(i=>cur[i])):0;
+      let sc=4*snd.length-3*interior-2*highMute-1.5*span-.5*fingers+.5*opens-.15*p-(opens&&maxF>=4?4:0);
+      [3,4].forEach(v=>{if(cnt[v]>1) sc-=.5*(cnt[v]-1);}); [9,10,11].forEach(v=>{if(req.includes(v)&&cnt[v]>1) sc-=3*(cnt[v]-1);});
+      if(opt.includes(7)&&!cnt[7]) sc-=2;
+      if(iv(first,cur[first])!==0) sc-=6;
+      const key=cur.join(",");
+      if(!found.has(key)) found.set(key,{frets:cur.slice(),sc,pos:fr.length?Math.min(...fr.map(i=>cur[i])):0,open:snd.some(i=>cur[i]===0)});
+    })(0);
+  }
+  /* per posisi: ambil 2 terbaik, buang yang hanya versi "kurang senar" dari bentuk lain */
+  const all=[...found.values()].sort((a,b)=>b.sc-a.sc), keep=[];
+  const subsetOf=(b,a)=>b.frets.every((f,i)=>f<0||a.frets[i]===f);
+  for(const v of all){
+    const posKey=v.open?0:v.pos;
+    if(keep.filter(k=>(k.open?0:k.pos)===posKey).length>=3) continue;
+    if(keep.some(k=>subsetOf(v,k))) continue;
+    keep.push(v);
+  }
+  const best=keep.length?keep[0].sc:0;
+  return keep.filter(k=>k.sc>=best-12).sort((a,b)=>(a.open?0:a.pos)-(b.open?0:b.pos)||b.sc-a.sc).slice(0,16);
+}
+function miniSVG(fr,root){
+  const used=fr.filter(f=>f>0), max=used.length?Math.max(...used):0, min=used.length?Math.min(...used):0;
+  const start=max<=4?1:min, gx=34, gw=95, sw=gw/5, gy=46, rh=24;
+  let s='<svg viewBox="0 0 150 200" xmlns="http://www.w3.org/2000/svg">';
+  if(start===1) s+='<rect x="'+(gx-1)+'" y="'+(gy-4)+'" width="'+(gw+2)+'" height="5" fill="#17464f"/>';
+  else s+='<text x="'+(gx-12)+'" y="'+(gy+16)+'" text-anchor="end" font-family="Segoe UI,Arial" font-size="11" font-weight="700" fill="#17464f">'+start+'fr</text>';
+  for(let r=0;r<=5;r++) s+='<line x1="'+gx+'" y1="'+(gy+r*rh)+'" x2="'+(gx+gw)+'" y2="'+(gy+r*rh)+'" stroke="#aab" stroke-width="1.2"/>';
+  fr.forEach((f,st)=>{
+    const x=gx+st*sw;
+    s+='<line x1="'+x+'" y1="'+gy+'" x2="'+x+'" y2="'+(gy+5*rh)+'" stroke="#666" stroke-width="'+(1.8-st*.18)+'"/>';
+    if(f<0) s+='<text x="'+x+'" y="'+(gy-12)+'" text-anchor="middle" font-family="Segoe UI,Arial" font-size="15" fill="#c4553a">×</text>';
+    else if(f===0) s+='<circle cx="'+x+'" cy="'+(gy-17)+'" r="5.5" fill="none" stroke="#206f78" stroke-width="2"/>';
+    else s+='<circle cx="'+x+'" cy="'+(gy+(f-start+.5)*rh)+'" r="8.5" fill="'+((OPEN[st]+f)%12===root?"#c4553a":"#206f78")+'"/>';
+  });
+  const t=fr.some(f=>f>9)?fr.map(f=>f<0?"x":f).join(" "):fr.map(f=>f<0?"x":f).join("");
+  s+='<text x="81" y="'+(gy+5*rh+30)+'" text-anchor="middle" font-family="Consolas,Courier New,monospace" font-size="'+(t.length>8?12:16)+'" font-weight="700" fill="#17464f">'+t+'</text>';
+  s+='<text x="81" y="'+(gy+5*rh+48)+'" text-anchor="middle" font-family="Segoe UI,Arial" font-size="11" fill="#6b7a7a">'+(start===1?"posisi terbuka/awal":"fret "+start)+'</text>';
+  return s+'</svg>';
+}
+
+/* ---------- baca nama chord ---------- */
+const ALIAS={"":"","maj":"","M":"","min":"m","mi":"m","M7":"maj7","Δ":"maj7","Δ7":"maj7","ma7":"maj7","min7":"m7","mi7":"m7",
+  "ø":"m7♭5","ø7":"m7♭5","o":"dim","°":"dim","o7":"dim7","°7":"dim7","+":"aug","sus":"sus4","add2":"add9","madd9":"m(add9)","mM7":"m(maj7)","mmaj7":"m(maj7)",
+  "m(M7)":"m(maj7)","69":"6/9","maj9":"maj9","M9":"maj9","7+9":"7#9","7+5":"7#5","aug7":"7#5","+7":"7#5"};
+const noteName=(l,a)=>l.toUpperCase()+(a==="♯"?"#":a==="♭"?"b":a||"");
+const pcOf=n=>(([0,2,4,5,7,9,11])["CDEFGAB".indexOf(n[0])]+(n[1]==="#"?1:n[1]==="b"?-1:0)+12)%12;
+function parseChord(t){
+  t=t.trim(); let bn=null;
+  const sl=t.match(/^(.+)\/([A-Ga-g])([#♯b♭]?)$/);          /* slash chord: E/A, C/E, D/F# */
+  if(sl){t=sl[1]; bn=noteName(sl[2],sl[3]);}
+  const m=t.match(/^([A-Ga-g])([#♯b♭]?)(.*)$/); if(!m) return null;
+  let rn=noteName(m[1],m[2]);
+  const pc=pcOf(rn);
+  let q=m[3].replace(/♯/g,"#");
+  if(q in ALIAS) q=ALIAS[q];
+  q=q.replace(/b(?=\d)/g,"♭");
+  if(q in ALIAS) q=ALIAS[q];
+  const fi=FORM.findIndex(f=>f[0]===q);
+  if(fi<0) return null;
+  const p={r:pc,rn,fi,sh:0};
+  if(bn&&pcOf(bn)!==pc){p.b=pcOf(bn);p.bn=bn;}
+  return p;
+}
+const hasBass=p=>typeof p.b==="number"&&p.b!==p.r;
+const padName=p=>(pretty(p.rn)+pretty(FORM[p.fi][0]).replace(/#/g,"♯")+(hasBass(p)?"/"+pretty(p.bn):"")).replace(/♯/g,"♯");
+
+/* bentuk slash chord: nada terendah = bass; bass boleh bukan nada chord (mis. E/A) */
+function findSlash(root,fi,bass){
+  const [,req,opt]=FORM[fi], tones=new Set(req.concat(opt)), bi=(bass-root+12)%12;
+  const iv=(st,f)=>(OPEN[st]+f-root+120)%12, found=new Map();
+  for(let p=0;p<=12;p++){
+    const lo=Math.max(1,p), hi=p===0?3:p+3, openOK=p<=2;
+    const opts=[0,1,2,3,4,5].map(st=>{const o=[-1]; const okN=v=>tones.has(v)||v===bi;
+      if(openOK&&okN(iv(st,0))) o.push(0); for(let f=lo;f<=hi;f++) if(okN(iv(st,f))) o.push(f); return o;});
+    const cur=[-1,-1,-1,-1,-1,-1];
+    (function rec(st){
+      if(st<6){for(const f of opts[st]){cur[st]=f;rec(st+1);} cur[st]=-1; return;}
+      const snd=[0,1,2,3,4,5].filter(i=>cur[i]>=0); if(snd.length<3) return;
+      const first=snd[0], last=snd[snd.length-1];
+      if(iv(first,cur[first])!==bi||first>2) return;
+      const up=snd.slice(1).map(i=>iv(i,cur[i]));
+      if(!tones.has(bi)&&up.includes(bi)) return;                       /* bass asing hanya di bawah */
+      const have=new Set(up.concat(tones.has(bi)?[bi]:[]));
+      if(!req.filter(x=>x!==7||req.length<=2).every(x=>have.has(x))) return;   /* kuint boleh hilang */
+      let interior=0; for(let i=first+1;i<last;i++) if(cur[i]<0) interior++;
+      const highMute=5-last; if(interior>1||highMute>1) return;
+      const fr=snd.filter(i=>cur[i]>0); let span=0,fingers=0;
+      if(fr.length){
+        const fv=fr.map(i=>cur[i]), minF=Math.min(...fv); span=Math.max(...fv)-minF; if(span>3) return;
+        if(p>0&&minF!==lo) return;
+        const atMin=fr.filter(i=>cur[i]===minF); let barre=atMin.length>=2;
+        if(barre) for(let i=atMin[0];i<=atMin[atMin.length-1];i++) if(cur[i]<minF){barre=false;break;}
+        fingers=(barre?1:atMin.length)+fr.filter(i=>cur[i]>minF).length; if(fingers>4) return;
+      } else if(p>0) return;
+      const opens=snd.filter(i=>cur[i]===0).length, maxF=fr.length?Math.max(...fr.map(i=>cur[i])):0;
+      let sc=4*snd.length-3*interior-2*highMute-1.5*span-.5*fingers+.5*opens-.15*p-(opens&&maxF>=4?4:0);
+      if(!have.has(7)&&tones.has(7)) sc-=2;
+      const pos=fr.length?Math.min(...fr.map(i=>cur[i])):0, key=cur.join(",");
+      if(!found.has(key)) found.set(key,{frets:cur.slice(),sc,pos,open:opens>0});
+    })(0);
+  }
+  const all=[...found.values()].sort((a,b)=>b.sc-a.sc), keep=[];
+  const subsetOf=(b,a)=>b.frets.every((f,i)=>f<0||a.frets[i]===f);
+  for(const v of all){
+    const pk=v.open?0:v.pos;
+    if(keep.filter(k=>(k.open?0:k.pos)===pk).length>=3) continue;
+    if(keep.some(k=>subsetOf(v,k))) continue;
+    keep.push(v);
+  }
+  const best=keep.length?keep[0].sc:0;
+  return keep.filter(k=>k.sc>=best-12).sort((a,b)=>(a.open?0:a.pos)-(b.open?0:b.pos)||b.sc-a.sc).slice(0,16);
+}
+const shapeCache={};
+/* bentuk standar: open chord, lalu barre bentuk E / A */
+const OPENF={"0":"x32010","0:7":"x32310","0:maj7":"x32000","0:add9":"x32030",
+  "2":"xx0232","2:m":"xx0231","2:7":"xx0212","2:maj7":"xx0222","2:m7":"xx0211","2:sus4":"xx0233","2:sus2":"xx0230","2:6":"xx0202","2:m6":"xx0201",
+  "4":"022100","4:m":"022000","4:7":"020100","4:m7":"022030","4:maj7":"021100","4:sus4":"022200","4:5":"022xxx","4:7sus4":"020200","4:6":"022120","4:m6":"022020",
+  "5:maj7":"xx3210",
+  "7":"320003","7:7":"320001","7:maj7":"320002","7:6":"320000","7:sus4":"330013",
+  "9":"x02220","9:m":"x02210","9:7":"x02020","9:m7":"x02010","9:maj7":"x02120","9:sus4":"x02230","9:sus2":"x02200","9:7sus4":"x02030","9:6":"x02222","9:m6":"x02212","9:5":"x022xx",
+  "11:7":"x21202","0:5":"x355xx"};
+const ESHF={"":[0,2,2,1,0,0],m:[0,2,2,0,0,0],"7":[0,2,0,1,0,0],maj7:[0,-9,1,1,0,-9],m7:[0,2,0,0,0,0],sus4:[0,2,2,2,0,0],"5":[0,2,2,-9,-9,-9],"7sus4":[0,2,0,2,0,0],m6:[0,-9,-1,0,0,-9],"6":[0,-9,-1,1,0,-9],"9":[0,-9,0,1,0,2],"m7♭5":[0,-9,0,0,-1,-9]};
+const ASHF={"":[-9,0,2,2,2,0],m:[-9,0,2,2,1,0],"7":[-9,0,2,0,2,0],maj7:[-9,0,2,1,2,0],m7:[-9,0,2,0,1,0],sus4:[-9,0,2,2,3,0],sus2:[-9,0,2,2,0,0],"5":[-9,0,2,2,-9,-9],
+  "7sus4":[-9,0,2,0,3,0],"6":[-9,0,2,2,2,2],m6:[-9,0,2,-1,1,-9],"m7♭5":[-9,0,1,0,1,-9],dim:[-9,0,1,2,1,-9],dim7:[-9,0,1,-1,1,-9],"7#9":[-9,0,-1,0,1,-9],"9":[-9,0,-1,0,0,0],maj9:[-9,0,-1,1,0,-9],m9:[-9,0,-2,0,0,-9]};
+const parseF=t=>t.split("").map(c=>c==="x"?-1:+c);
+function standardShape(r,fi){
+  const q=FORM[fi][0], o=OPENF[r+(q?":"+q:"")]; if(o) return parseF(o);
+  const c=[];
+  const mk=(sh,rf)=>sh.map(v=>v===-9?-1:rf+v);
+  if(ESHF[q]){let rf=(r-4+12)%12; if(rf<1||(rf+Math.min(...ESHF[q].filter(v=>v>-9))<1)) rf+=12; c.push(mk(ESHF[q],rf));}
+  if(ASHF[q]){let rf=(r-9+12)%12; if(rf<1||(rf+Math.min(...ASHF[q].filter(v=>v>-9))<1)) rf+=12; c.push(mk(ASHF[q],rf));}
+  if(!c.length) return null;
+  const pos=f=>Math.min(...f.filter(v=>v>0));
+  return c.sort((a,b)=>pos(a)-pos(b))[0];
+}
+function shapesOf(p){
+  const k=p.r+":"+p.fi+(hasBass(p)?"/"+p.b:""); if(shapeCache[k]) return shapeCache[k];
+  let list=hasBass(p)?findSlash(p.r,p.fi,p.b):findShapes(p.r,p.fi,false);
+  let std=hasBass(p)?null:standardShape(p.r,p.fi);
+  if(std){const key=std.join(","); list=[{frets:std}].concat(list.filter(s=>s.frets.join(",")!==key));}
+  else if(list.length){ /* tanpa bentuk standar: pilih skor terbaik dengan posisi rendah */
+    const adj=s=>s.sc-.8*(s.open?0:s.pos), b=list.reduce((m,s)=>adj(s)>adj(m)?s:m);
+    list=[b].concat(list.filter(s=>s!==b));
+  }
+  return shapeCache[k]=list;
+}
+function fretsOf(p){const s=shapesOf(p); return s.length?s[p.sh%s.length].frets:null;}
+
+
+let ctx=null, master=null, cache={};
+function audio(){
+  if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)(); master=ctx.createGain(); master.gain.value=.8; master.connect(ctx.destination);}
+  if(ctx.state==="suspended") ctx.resume();
+}
+function ks(m){
+  if(cache[m]) return cache[m];
+  const sr=ctx.sampleRate,N=Math.round(sr/(440*Math.pow(2,(m-69)/12))),len=Math.floor(sr*2.5),b=ctx.createBuffer(1,len,sr),y=b.getChannelData(0);
+  let last=0; for(let i=0;i<N;i++){last=last*.5+(Math.random()*2-1)*.5;y[i]=last;}
+  for(let i=N;i<len;i++) y[i]=.996*.5*(y[i-N]+y[i-N+1]);
+  return cache[m]=b;
+}
+let voices=[];
+function stopVoices(t){voices.forEach(g=>{try{g.gain.cancelScheduledValues(t);g.gain.setTargetAtTime(0,t,.03);}catch(e){}});voices=[];}
+function pluck(m,t,v){const s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=ks(m);g.gain.value=v;s.connect(g).connect(master);s.start(t);s.stop(t+2.6);voices.push(g);}
+function piano(m,t,v){
+  const f=440*Math.pow(2,(m-69)/12), g=ctx.createGain(), o1=ctx.createOscillator(), o2=ctx.createOscillator(), g2=ctx.createGain();
+  o1.type="triangle"; o1.frequency.value=f; o2.type="sine"; o2.frequency.value=f*2; g2.gain.value=.25;
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.008); g.gain.setTargetAtTime(v*.35,t+.01,.25); g.gain.setTargetAtTime(0,t+.6,.6);
+  o1.connect(g); o2.connect(g2).connect(g); g.connect(master); o1.start(t); o2.start(t); o1.stop(t+3.5); o2.stop(t+3.5); voices.push(g);
+}
+function pianoNotes(p){
+  const [,req,opt]=FORM[p.fi], ivs=[...new Set(req.concat(opt))].sort((a,b)=>a-b);
+  const base=48+p.r, bp=hasBass(p)?p.b:p.r; const out=[36+bp+(bp<4?12:0)];
+  ivs.forEach(iv=>out.push(base+iv+(iv<3&&ivs.length>4?12:0)));
+  return out;
+}
+
+
+/* ---------- birama ---------- */
+const TS={"2/4":{n:2,acc:[0]},"3/4":{n:3,acc:[0]},"4/4":{n:4,acc:[0,2]},"5/4":{n:5,acc:[0,3]},"6/8":{n:6,acc:[0,3]},"7/8":{n:7,acc:[0,2,4]},"9/8":{n:9,acc:[0,3,6]},"12/8":{n:12,acc:[0,3,6,9]}};
+const STORE="musicone-chordbirama-v1";
+let S={ts:"4/4",bpm:90,snd:"guitar",mode:"each",metro:true,countin:true,loop:true,chordOn:true,bars:[["G","","",""],["Am","","",""],["Bm","","",""],["C","","D",""]]};
+try{const d=JSON.parse(localStorage.getItem(STORE)); if(d&&Array.isArray(d.bars)&&TS[d.ts]) S=Object.assign(S,d);}catch(e){}
+var scoreQ=0;
+function persist(){try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){} cancelAnimationFrame(scoreQ); scoreQ=requestAnimationFrame(()=>renderScore());}
+const beatsN=()=>TS[S.ts].n;
+const isAcc=k=>TS[S.ts].acc.includes(k);
+const level=k=>k===0?2:isAcc(k)?1:0;
+
+/* chord yang berlaku pada (bar,ketukan): isi kotak atau chord terakhir sebelumnya */
+const parseCell=t=>{t=(t||"").trim(); if(!t||t==="."||t==="%"||t==="-") return null; return parseChord(t);};
+function chordAt(b,k){
+  for(let bi=b;bi>=0;bi--){const bar=S.bars[bi]; for(let ki=(bi===b?k:bar.length-1);ki>=0;ki--){const p=parseCell(bar[ki]); if(p) return p;}}
+  /* awal lagu kosong: ambil chord terakhir lagu (untuk loop) */
+  for(let bi=S.bars.length-1;bi>=0;bi--) for(let ki=S.bars[bi].length-1;ki>=0;ki--){const p=parseCell(S.bars[bi][ki]); if(p) return p;}
+  return null;
+}
+function nextChange(b,k){
+  const cur=chordAt(b,k), cn=cur?padName(cur):"";
+  let bi=b,ki=k;
+  for(let n=0;n<S.bars.length*beatsN();n++){
+    ki++; if(ki>=beatsN()){ki=0;bi++; if(bi>=S.bars.length){if(!S.loop) return null; bi=0;}}
+    const p=parseCell(S.bars[bi][ki]); if(p&&padName(p)!==cn) return p;
+  }
+  return null;
+}
+
+/* ---------- tampilan bar ---------- */
+let focusCell=null;
+function renderBars(){
+  const n=beatsN();
+  document.documentElement.style.setProperty("--barw",Math.min(n*62+20,760)+"px");
+  $("bars").innerHTML=S.bars.map((bar,b)=>'<div class="bar" data-b="'+b+'"><div class="top"><span class="num" title="Mainkan dari bar ini">▶ '+(b+1)+'</span>'+
+    '<span class="tools"><button class="dup" title="Gandakan bar">⧉</button><button class="del" title="Hapus bar">✕</button></span></div>'+
+    '<div class="beats" style="grid-template-columns:repeat('+n+',1fr)">'+bar.map((c,k)=>'<div class="cell'+(isAcc(k)?' acc':'')+'" data-b="'+b+'" data-k="'+k+'"><span class="bn">'+(k+1)+'</span>'+
+      '<input type="text" value="'+esc(c)+'" placeholder="·" spellcheck="false" autocomplete="off" data-b="'+b+'" data-k="'+k+'"></div>').join("")+'</div></div>').join("");
+  $("bars").querySelectorAll("input").forEach(validate);
+  renderChips();
+}
+const esc=t=>String(t).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+function validate(inp){const v=inp.value.trim(); inp.classList.toggle("bad",!!v&&v!=="."&&v!=="%"&&v!=="-"&&!parseChord(v));}
+function renderChips(){
+  const seen=[]; S.bars.forEach(bar=>bar.forEach(c=>{const p=parseCell(c); if(p){const n=padName(p); if(!seen.some(s=>s.n===n)) seen.push({n,t:c.trim()});}}));
+  $("chips").innerHTML=seen.length?'Chord dipakai: '+seen.map(s=>'<button data-t="'+esc(s.t)+'">'+s.n+'</button>').join(""):"";
+}
+$("bars").addEventListener("input",e=>{
+  const inp=e.target; if(inp.tagName!=="INPUT") return;
+  S.bars[+inp.dataset.b][+inp.dataset.k]=inp.value.trim(); validate(inp); persist(); renderChips();
+});
+$("bars").addEventListener("focusin",e=>{if(e.target.tagName==="INPUT") focusCell=e.target;});
+$("bars").addEventListener("keydown",e=>{
+  const inp=e.target; if(inp.tagName!=="INPUT") return;
+  const all=[...$("bars").querySelectorAll("input")], i=all.indexOf(inp);
+  if(e.key==="Enter"||(e.key==="ArrowRight"&&inp.selectionStart===inp.value.length)){e.preventDefault(); if(all[i+1]) all[i+1].focus(); else {addBar(); $("bars").querySelectorAll("input")[i+1]?.focus();}}
+  else if(e.key==="ArrowLeft"&&inp.selectionStart===0&&all[i-1]){e.preventDefault();all[i-1].focus();}
+});
+$("bars").addEventListener("click",e=>{
+  const barEl=e.target.closest(".bar"); if(!barEl) return; const b=+barEl.dataset.b;
+  if(e.target.closest(".del")){if(S.bars.length>1||confirm("Hapus bar terakhir?")){S.bars.splice(b,1); if(!S.bars.length) S.bars.push(emptyBar()); persist(); renderBars();} return;}
+  if(e.target.closest(".dup")){S.bars.splice(b+1,0,S.bars[b].slice()); persist(); renderBars(); return;}
+  if(e.target.closest(".num")){stop(); start(b);}
+});
+$("chips").addEventListener("click",e=>{
+  const t=e.target.closest("button"); if(!t) return;
+  const all=[...$("bars").querySelectorAll("input")];
+  let inp=focusCell&&document.body.contains(focusCell)?focusCell:all.find(x=>!x.value.trim())||all[0];
+  inp.value=t.dataset.t; S.bars[+inp.dataset.b][+inp.dataset.k]=inp.value; validate(inp); persist();
+  const i=all.indexOf(inp); (all[i+1]||inp).focus();
+  preview(parseChord(t.dataset.t));
+});
+const emptyBar=()=>Array(beatsN()).fill("");
+function addBar(){S.bars.push(emptyBar()); persist(); renderBars();}
+$("addBar").onclick=addBar;
+$("clearAll").onclick=()=>{if(confirm("Hapus semua bar dan chord? Ini tidak bisa dibatalkan.")){stop();S.bars=[emptyBar(),emptyBar(),emptyBar(),emptyBar()];persist();renderBars();}};
+
+/* isi cepat */
+function quickParse(txt){
+  const n=beatsN(), bad=[], over=[];
+  const bars=txt.split("|").map(s=>s.trim()).filter(Boolean).map((s,bi)=>{
+    const toks=s.split(/[\s,]+/).filter(Boolean), bar=Array(n).fill("");
+    toks.forEach(t=>{if(t!=="."&&t!=="%"&&!parseChord(t)) bad.push(t);});
+    if(toks.length>n) over.push(bi+1);
+    if(toks.length>=n||toks.some(t=>t==="."||t==="%")) toks.slice(0,n).forEach((t,k)=>bar[k]=t==="."||t==="%"?"":t);
+    else toks.forEach((t,i)=>bar[Math.round(i*n/toks.length)]=t);
+    return bar;
+  });
+  return {bars,bad,over};
+}
+function quick(replace){
+  const {bars,bad,over}=quickParse($("quick").value);
+  if(over.length){say("Bar "+over.join(", ")+" berisi lebih dari "+beatsN()+" chord (birama "+S.ts+"). Kurangi atau pecah jadi dua bar.",true);return;}
+  if(!bars.length){say("Tulis dulu progresinya, misalnya: G | Am D | Bm | C",true);return;}
+  if(bad.length){say("Tidak dikenali: "+bad.join(", ")+". Periksa lagi penulisannya.",true);return;}
+  stop(); S.bars=replace?bars:S.bars.concat(bars); persist(); renderBars();
+  say((replace?"Diganti: ":"Ditambahkan: ")+bars.length+" bar.");
+}
+function say(t,err){$("msg").textContent=t;$("msg").className="msg"+(err?" err":"");}
+$("quickRep").onclick=()=>quick(true);
+$("quickAdd").onclick=()=>quick(false);
+$("quick").addEventListener("keydown",e=>{if(e.key==="Enter")quick(true);});
+
+/* ---------- suara ---------- */
+let noise=null;
+function click(t,lv){
+  const o=ctx.createOscillator(), g=ctx.createGain(), vol=lv===2?1:lv===1?.65:.35;
+  o.type="square"; o.frequency.value=lv===2?2000:lv===1?1400:1000;
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol*.22,t+.002); g.gain.exponentialRampToValueAtTime(.0001,t+.03);
+  o.connect(g).connect(master); o.start(t); o.stop(t+.04);
+}
+function strumAt(p,t,vol,part){
+  /* part: "all" | "bass" (nada terendah saja) | "upper" (tanpa nada terendah) */
+  if(S.snd==="piano"){
+    const ns=pianoNotes(p), use=part==="bass"?ns.slice(0,1):part==="upper"?ns.slice(1):ns;
+    if(part!=="upper") stopVoices(t);
+    use.forEach((m,k)=>piano(m,t+k*.004,(k||part==="upper"?.15:.21)*vol));
+    return;
+  }
+  const fr=fretsOf(p); if(!fr) return;
+  const snd=fr.map((f,s)=>f>=0?OPEN[s]+f:null).map((m,s)=>({m,s})).filter(x=>x.m!==null);
+  const use=part==="bass"?snd.slice(0,1):part==="upper"?snd.slice(1):snd;
+  if(part!=="upper") stopVoices(t);
+  use.forEach((x,k)=>pluck(x.m,t+k*.028,.3*vol));
+}
+function preview(p){if(!p) return; audio(); strumAt(p,ctx.currentTime+.02,1,"all");}
+
+/* ---------- pemutar (lookahead scheduler) ---------- */
+let timer=null, playing=false, nextT=0, bar=0, beat=0, countLeft=0, queue=[], raf=0, lastName="";
+function start(fromBar){
+  audio(); playing=true; $("playBtn").textContent="■ Stop"; $("playBtn").classList.add("on");
+  bar=Math.min(fromBar||0,S.bars.length-1); beat=0; countLeft=S.countin?beatsN():0; lastName="";
+  nextT=ctx.currentTime+.1; queue=[];
+  timer=setInterval(scheduler,25); scheduler(); raf=requestAnimationFrame(frame);
+}
+function stop(){
+  if(!playing) return; playing=false; clearInterval(timer); cancelAnimationFrame(raf);
+  if(ctx) stopVoices(ctx.currentTime);
+  $("playBtn").textContent="▶ Mainkan"; $("playBtn").classList.remove("on");
+  document.querySelectorAll(".cell.now,.bar.cur").forEach(x=>x.classList.remove("now","cur"));
+  document.querySelectorAll(".dot.on").forEach(x=>x.classList.remove("on"));
+  $("pos").textContent="Berhenti. Tekan ▶ Mainkan atau Spasi";
+}
+function scheduler(){
+  const spb=60/S.bpm;
+  while(nextT<ctx.currentTime+.12){
+    if(countLeft>0){
+      const k=beatsN()-countLeft; click(nextT,level(k));
+      queue.push({t:nextT,count:k+1}); countLeft--; nextT+=spb; continue;
+    }
+    if(bar>=S.bars.length){ if(S.loop) bar=0; else {const endT=nextT; queue.push({t:endT,end:true}); clearInterval(timer); timer=null; return;} }
+    const k=beat, lv=level(k), p=chordAt(bar,k), cell=parseCell(S.bars[bar][k]);
+    if(S.metro) click(nextT,lv);
+    if(S.chordOn&&p){
+      const vol=lv===2?1.15:lv===1?1:.8;
+      if(S.mode==="each") strumAt(p,nextT,vol,"all");
+      else if(S.mode==="change"){ if(cell||(bar===0&&k===0)||!lastName) strumAt(p,nextT,vol,"all"); }
+      else { if(cell||lv>0) strumAt(p,nextT,vol,"bass"); else strumAt(p,nextT,.8,"upper"); }
+      lastName=padName(p);
+    }
+    queue.push({t:nextT,bar,beat:k,p});
+    nextT+=spb; beat++; if(beat>=beatsN()){beat=0;bar++;}
+  }
+}
+function frame(){
+  if(!playing) return;
+  const now=ctx.currentTime; let ev=null;
+  while(queue.length&&queue[0].t<=now) ev=queue.shift();
+  if(ev){
+    if(ev.end){stop(); return;}
+    document.querySelectorAll(".dot").forEach((d,i)=>d.classList.toggle("on",i===(ev.count?ev.count-1:ev.beat)));
+    document.querySelectorAll(".cell.now,.bar.cur").forEach(x=>x.classList.remove("now","cur"));
+    if(ev.count){ $("pos").textContent="Hitungan awal: "+ev.count+" …"; showNow(chordAt(0,0)&&parseCell(S.bars[0][0])?chordAt(0,0):chordAt(0,0),true); }
+    else{
+      const c=document.querySelector('.cell[data-b="'+ev.bar+'"][data-k="'+ev.beat+'"]'); if(c){c.classList.add("now"); c.parentNode.parentNode.classList.add("cur");}
+      $("pos").textContent="Bar "+(ev.bar+1)+" dari "+S.bars.length+" · ketukan "+(ev.beat+1);
+      showNow(ev.p,false,ev.bar,ev.beat);
+    }
+  }
+  raf=requestAnimationFrame(frame);
+}
+let shownKey="";
+function showNow(p,isCount,b,k){
+  const nx=isCount?p:nextChange(b,k);
+  const key=(p?padName(p)+(fretsOf(p)||[]).join(","):"-")+"|"+(isCount?"c":"")+(nx?padName(nx):"");
+  if(key===shownKey) return; shownKey=key;
+  $("nowName").textContent=isCount?"…":(p?padName(p):"–");
+  $("nowDia").innerHTML=p&&fretsOf(p)?miniSVG(fretsOf(p),p.r):"";
+  $("nextName").textContent=nx?padName(nx):"–";
+}
+function renderDots(){
+  $("dots").innerHTML=Array.from({length:beatsN()},(_,k)=>'<span class="dot'+(isAcc(k)?' acc':'')+'">'+(k+1)+'</span>').join("");
+  $("tsUnit").textContent=S.ts.endsWith("/8")?"(ketukan = not 1/8)":"(ketukan = not 1/4)";
+}
+
+/* ---------- pengaturan ---------- */
+$("ts").innerHTML=Object.keys(TS).map(t=>'<option>'+t+'</option>').join("");
+function syncUI(){
+  $("ts").value=S.ts; $("bpm").value=$("bpmR").value=S.bpm; $("snd").value=S.snd; $("mode").value=S.mode;
+  ["metro","countin","loop","chordOn"].forEach(id=>$(id).checked=!!S[id]);
+}
+$("ts").onchange=()=>{
+  S.ts=$("ts").value; const n=beatsN();
+  S.bars=S.bars.map(b=>b.length>=n?b.slice(0,n):b.concat(Array(n-b.length).fill("")));
+  persist(); renderBars(); renderDots(); if(playing){stop();}
+};
+const setBpm=v=>{S.bpm=Math.max(40,Math.min(220,Math.round(+v||90))); $("bpm").value=$("bpmR").value=S.bpm; persist();};
+$("bpmR").oninput=()=>setBpm($("bpmR").value);
+$("bpm").onchange=()=>setBpm($("bpm").value);
+$("snd").onchange=()=>{S.snd=$("snd").value;persist();};
+$("mode").onchange=()=>{S.mode=$("mode").value;persist();};
+["metro","countin","loop","chordOn"].forEach(id=>$(id).onchange=()=>{S[id]=$(id).checked;persist();});
+$("playBtn").onclick=()=>playing?stop():start(0);
+document.addEventListener("keydown",e=>{
+  if(e.target.matches("input,select,textarea")) return;
+  if(e.code==="Space"){e.preventDefault(); playing?stop():start(0);}
+  else if(e.key==="ArrowUp"){e.preventDefault();setBpm(S.bpm+(e.shiftKey?10:1));}
+  else if(e.key==="ArrowDown"){e.preventDefault();setBpm(S.bpm-(e.shiftKey?10:1));}
+});
+
+/* ---------- partitur (SVG) ---------- */
+const xesc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+function usedChords(){
+  const seen=[]; S.bars.forEach(bar=>bar.forEach(c=>{const p=parseCell(c); if(p&&!seen.some(s=>padName(s)===padName(p))) seen.push(p);})); return seen;
+}
+const measCtx=document.createElement("canvas").getContext("2d");
+function textW(t,size){measCtx.font="700 "+size+"px 'Segoe UI','Helvetica Neue',Arial,sans-serif"; return measCtx.measureText(t).width;}
+function scoreSVG(){
+  const W=1200, M=50, n=beatsN(), [num,den]=S.ts.split("/"), PRE=96, FS=n>6?17:22;
+  /* label chord per baris: posisi x & ruang yang tersedia sampai label berikutnya */
+  const labelsOf=(L,bpl)=>{
+    const barW=(W-2*M-PRE)/bpl, bw=(barW-24)/n, out=[], cnt=Math.min(bpl,S.bars.length-L*bpl);
+    for(let j=0;j<cnt;j++){const b=L*bpl+j; for(let k=0;k<n;k++){
+      const p=parseCell(S.bars[b][k])||(b===0&&k===0?chordAt(0,0):null);
+      if(p) out.push({b,k,x:M+PRE+j*barW+14+(k+.5)*bw-8,name:padName(p)});
+    }}
+    const endX=M+PRE+barW*cnt;
+    out.forEach((l,i)=>l.avail=(i+1<out.length?out[i+1].x:endX+4)-l.x-10);
+    return out;
+  };
+  const fits=bpl=>{for(let L=0;L*bpl<S.bars.length;L++) if(labelsOf(L,bpl).some(l=>textW(l.name,FS*.8)>l.avail)) return false; return true;};
+  /* otomatis: bar per baris sebanyak mungkin selama nama chord tidak bertabrakan */
+  const cand=n>=9?[2,1]:n>=6?[3,2,1]:[4,3,2];
+  const bpl=+S.bpl||cand.find(fits)||cand[cand.length-1], lines=Math.ceil(S.bars.length/bpl);
+  const title=(S.title||"").trim()||"Progresi Chord";
+  let o="", y=0;
+  /* kepala */
+  o+='<rect width="'+W+'" height="120" fill="#17464f"/>';
+  o+='<text x="'+M+'" y="58" fill="#fff" font-size="38" font-weight="700">'+xesc(title)+'</text>';
+  o+='<text x="'+M+'" y="94" fill="#cfe0e0" font-size="20">Birama '+S.ts+'   ·   '+(den==="8"?"♪":"♩")+' = '+S.bpm+'   ·   '+S.bars.length+' bar</text>';
+  const lg=document.querySelector("header .brand svg"), lp=lg.querySelector("path").getAttribute("d");
+  o+='<svg x="'+(W-M-210)+'" y="28" width="210" height="46" viewBox="'+lg.getAttribute("viewBox")+'"><path fill="#fff" fill-rule="evenodd" d="'+lp+'"/></svg>';
+  o+='<text x="'+(W-M-105)+'" y="96" text-anchor="middle" fill="#cfe0e0" font-size="16">Dibuat oleh Tim Music One</text>';
+  y=150; const breaks=[0,150];
+  /* diagram chord */
+  const used=usedChords();
+  if(S.scDia!==false&&used.length){
+    const dw=96, dh=128, per=Math.floor((W-2*M+14)/(dw+14));
+    used.forEach((p,i)=>{
+      const fr=fretsOf(p); const cx=M+(i%per)*(dw+14), cy=y+Math.floor(i/per)*(dh+38); if(i%per===0) breaks.push(cy-6);
+      o+='<text x="'+(cx+dw*0.54)+'" y="'+(cy+20)+'" text-anchor="middle" fill="#17464f" font-size="21" font-weight="700">'+xesc(padName(p))+'</text>';
+      if(fr) o+=miniSVG(fr,p.r).replace('<svg ','<svg x="'+cx+'" y="'+(cy+22)+'" width="'+dw+'" height="'+dh+'" ');
+    });
+    y+=Math.ceil(used.length/per)*(dh+38)+10;
+  }
+  /* sistem / baris */
+  const G=10, barW=(W-2*M-PRE)/bpl, sysH=120;
+  for(let L=0;L<lines;L++){ breaks.push(y);
+    const top=y+48, bot=top+4*G, mid=top+2*G, endX=M+PRE+barW*Math.min(bpl,S.bars.length-L*bpl);
+    for(let i=0;i<5;i++) o+='<line x1="'+M+'" y1="'+(top+i*G)+'" x2="'+endX+'" y2="'+(top+i*G)+'" stroke="#17464f" stroke-width="1.4"/>';
+    o+='<text x="'+(M+4)+'" y="'+(bot+3.5)+'" font-size="78" fill="#17464f" font-family="Segoe UI Symbol, Noto Music, Bravura, Arial Unicode MS, serif">𝄞</text>';
+    if(L===0){
+      o+='<text x="'+(M+70)+'" y="'+(top+G*2-2)+'" text-anchor="middle" font-size="27" font-weight="800" fill="#17464f" font-family="Georgia,serif">'+num+'</text>';
+      o+='<text x="'+(M+70)+'" y="'+(bot-1)+'" text-anchor="middle" font-size="27" font-weight="800" fill="#17464f" font-family="Georgia,serif">'+den+'</text>';
+    } else o+='<text x="'+(M+PRE-4)+'" y="'+(top-30)+'" text-anchor="end" font-size="13" fill="#6b7a7a">'+(L*bpl+1)+'</text>';
+    o+='<line x1="'+M+'" y1="'+top+'" x2="'+M+'" y2="'+bot+'" stroke="#17464f" stroke-width="1.6"/>';
+    /* nama chord: kecilkan bila ruang sempit, dan rapatkan bila masih belum muat */
+    labelsOf(L,bpl).forEach(l=>{
+      let fs=FS, w=textW(l.name,fs), extra="";
+      if(w>l.avail){fs=Math.max(12,Math.floor(FS*l.avail/w)); w=textW(l.name,fs); if(w>l.avail) extra=' textLength="'+Math.max(8,l.avail).toFixed(1)+'" lengthAdjust="spacingAndGlyphs"';}
+      o+='<text x="'+l.x.toFixed(1)+'" y="'+(top-14)+'" font-size="'+fs+'" font-weight="700" fill="#17464f"'+extra+'>'+xesc(l.name)+'</text>';
+    });
+    for(let j=0;j<bpl;j++){
+      const b=L*bpl+j; if(b>=S.bars.length) break;
+      const bx=M+PRE+j*barW, inner=barW-24, bw=inner/n;
+      for(let k=0;k<n;k++){
+        const x=bx+14+(k+.5)*bw;
+        o+='<line x1="'+(x-6)+'" y1="'+(mid+7)+'" x2="'+(x+6)+'" y2="'+(mid-7)+'" stroke="#17464f" stroke-width="5"/>';
+      }
+      const ex=bx+barW;
+      if(b===S.bars.length-1){
+        o+='<line x1="'+(ex-7)+'" y1="'+top+'" x2="'+(ex-7)+'" y2="'+bot+'" stroke="#17464f" stroke-width="1.6"/>';
+        o+='<rect x="'+(ex-4)+'" y="'+top+'" width="4" height="'+(4*G)+'" fill="#17464f"/>';
+      } else o+='<line x1="'+ex+'" y1="'+top+'" x2="'+ex+'" y2="'+bot+'" stroke="#17464f" stroke-width="1.6"/>';
+    }
+    y+=sysH;
+  }
+  y+=10;
+  o+='<text x="'+(W/2)+'" y="'+(y+14)+'" text-anchor="middle" font-size="13" fill="#6b7a7a">Dibuat dengan Chord per Birama · Music One</text>';
+  const H=Math.round(y+34); breaks.push(H); scoreSVG.breaks=[...new Set(breaks.map(Math.round))].sort((a,b)=>a-b);
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif"><rect width="'+W+'" height="'+H+'" fill="#fff"/>'+o+'</svg>';
+}
+function renderScore(){$("score").innerHTML=scoreSVG();}
+const slug=()=>((S.title||"").trim()||"progresi-chord").toLowerCase().replace(/[♯#]/g,"is").replace(/[♭]/g,"b").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"progresi-chord";
+function saveBlob(b,n){const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
+$("dlSvg").onclick=()=>saveBlob(new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n'+scoreSVG()],{type:"image/svg+xml"}),slug()+"-partitur.svg");
+$("dlPng").onclick=()=>{
+  const s=scoreSVG(), m=s.match(/width="(\d+)" height="(\d+)"/), img=new Image();
+  img.onload=()=>{const c=document.createElement("canvas");c.width=m[1]*2;c.height=m[2]*2;c.getContext("2d").drawImage(img,0,0,c.width,c.height);c.toBlob(b=>saveBlob(b,slug()+"-partitur.png"),"image/png");};
+  img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(s);
+};
+
+/* ---------- PDF (A4, dipotong di antara baris partitur) ---------- */
+function svgToCanvas(s,scale){
+  return new Promise((res,rej)=>{
+    const m=s.match(/width="(\d+)" height="(\d+)"/), img=new Image();
+    img.onload=()=>{const c=document.createElement("canvas");c.width=m[1]*scale;c.height=m[2]*scale;const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);res(c);};
+    img.onerror=()=>rej(new Error("gambar partitur gagal dibuat"));
+    img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(s);
+  });
+}
+function pageSlices(breaks,H,maxH){
+  const out=[]; let s=0;
+  while(s<H-1){
+    const ok=breaks.filter(b=>b>s&&b-s<=maxH);
+    let e=ok.length?Math.max(...ok):Math.min(H,s+maxH);
+    if(e<=s) e=Math.min(H,s+maxH);
+    out.push([s,e]); s=e;
+  }
+  return out;
+}
+async function buildPdf(){
+  const SC=2, PW=595.28, PH=841.89, MG=28, W=1200, k=(PW-2*MG)/W, footer=18;
+  const svg=scoreSVG(), H=+svg.match(/height="(\d+)"/)[1], breaks=scoreSVG.breaks;
+  const maxH=Math.floor((PH-2*MG-footer)/k), slices=pageSlices(breaks,H,maxH);
+  const full=await svgToCanvas(svg,SC);
+  const pages=[];
+  for(const [a,b] of slices){
+    const c=document.createElement("canvas"); c.width=W*SC; c.height=Math.round((b-a)*SC);
+    const g=c.getContext("2d"); g.fillStyle="#fff"; g.fillRect(0,0,c.width,c.height); g.drawImage(full,0,-a*SC);
+    const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",.92));
+    pages.push({jpg:new Uint8Array(await blob.arrayBuffer()),w:c.width,h:c.height,hPt:(b-a)*k});
+  }
+  /* tulis PDF secara langsung (tanpa library) */
+  const enc=new TextEncoder(), parts=[], offs=[]; let len=0;
+  const add=x=>{const u=typeof x==="string"?enc.encode(x):x; parts.push(u); len+=u.length;};
+  const obj=(n,body)=>{offs[n]=len; add(n+" 0 obj\n"); body(); add("\nendobj\n");};
+  const title=((S.title||"").trim()||"Progresi Chord").replace(/[^\x20-\x7e]/g,"").replace(/[()\\]/g,"");
+  const nPg=pages.length, font=3, first=4;
+  add("%PDF-1.4\n%MusicOne\n");
+  obj(1,()=>add("<< /Type /Catalog /Pages 2 0 R >>"));
+  obj(2,()=>add("<< /Type /Pages /Count "+nPg+" /Kids ["+pages.map((_,i)=>(first+3*i)+" 0 R").join(" ")+"] >>"));
+  obj(font,()=>add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"));
+  pages.forEach((p,i)=>{
+    const pg=first+3*i, ct=pg+1, im=pg+2, w=PW-2*MG, y=PH-MG-p.hPt;
+    const foot="BT /F1 8 Tf 0.42 0.48 0.48 rg "+MG+" 16 Td ("+title+"  -  Music One) Tj ET BT /F1 8 Tf 0.42 0.48 0.48 rg "+(PW-MG-60)+" 16 Td (Halaman "+(i+1)+" / "+nPg+") Tj ET";
+    const cs="q "+w.toFixed(2)+" 0 0 "+p.hPt.toFixed(2)+" "+MG+" "+y.toFixed(2)+" cm /Im0 Do Q\n"+foot;
+    obj(pg,()=>add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 "+PW+" "+PH+"] /Resources << /XObject << /Im0 "+im+" 0 R >> /Font << /F1 "+font+" 0 R >> >> /Contents "+ct+" 0 R >>"));
+    obj(ct,()=>{add("<< /Length "+enc.encode(cs).length+" >>\nstream\n"); add(cs); add("\nendstream");});
+    obj(im,()=>{add("<< /Type /XObject /Subtype /Image /Width "+p.w+" /Height "+p.h+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+p.jpg.length+" >>\nstream\n"); add(p.jpg); add("\nendstream");});
+  });
+  const nObj=first+3*nPg, xref=len;
+  let x="xref\n0 "+nObj+"\n0000000000 65535 f \n"; for(let i=1;i<nObj;i++) x+=String(offs[i]).padStart(10,"0")+" 00000 n \n";
+  add(x+"trailer\n<< /Size "+nObj+" /Root 1 0 R /Info << /Title ("+title+") /Producer (Music One - Chord per Birama) >> >>\nstartxref\n"+xref+"\n%%EOF");
+  return {blob:new Blob(parts,{type:"application/pdf"}),pages:nPg};
+}
+$("dlPdf").onclick=async()=>{
+  const b=$("dlPdf"), t=b.textContent; b.disabled=true; b.textContent="Membuat PDF…";
+  try{const r=await buildPdf(); saveBlob(r.blob,slug()+"-partitur.pdf");}
+  catch(e){alert("PDF gagal dibuat: "+e.message);}
+  finally{b.disabled=false; b.textContent=t;}
+};
+
+/* ---------- MIDI ---------- */
+function vlq(n){const b=[n&127]; while(n>>=7) b.unshift((n&127)|128); return b;}
+function track(evs){
+  evs.sort((a,b)=>a.t-b.t||a.o-b.o); let last=0; const d=[];
+  evs.forEach(e=>{d.push(...vlq(e.t-last),...e.b); last=e.t;});
+  d.push(0,0xFF,0x2F,0);
+  return [0x4D,0x54,0x72,0x6B,(d.length>>>24)&255,(d.length>>16)&255,(d.length>>8)&255,d.length&255,...d];
+}
+const txtBytes=s=>[...new TextEncoder().encode(s)];
+const meta=(t,type,data)=>({t,o:0,b:[0xFF,type,...vlq(data.length),...data]});
+function buildMidi(){
+  const PPQ=480, [num,den]=S.ts.split("/").map(Number), n=beatsN(), bt=den===8?PPQ/2:PPQ, total=S.bars.length*n*bt;
+  /* tempo MIDI selalu per not 1/4; untuk x/8 BPM = not 1/8, jadi not 1/4 = 2× lebih lama */
+  const uspq=Math.round(60e6/S.bpm*(den===8?2:1));
+  const t0=[meta(0,0x03,txtBytes((S.title||"Progresi Chord").trim()||"Progresi Chord")),
+    meta(0,0x51,[(uspq>>16)&255,(uspq>>8)&255,uspq&255]),
+    meta(0,0x58,[num,Math.log2(den),den===8?12:24,8])];
+  /* pukulan chord */
+  const strikes=[]; let lastName="";
+  for(let b=0;b<S.bars.length;b++) for(let k=0;k<n;k++){
+    const t=(b*n+k)*bt, lv=level(k), p=chordAt(b,k), cell=parseCell(S.bars[b][k]); if(!p) continue;
+    const vel=lv===2?104:lv===1?92:78, name=padName(p);
+    if(name!==lastName||cell) t0.push(meta(t,0x06,txtBytes(name)));
+    let part=null;
+    if(S.mode==="each") part="all";
+    else if(S.mode==="change"){ if(cell||!lastName) part="all"; }
+    else part=(cell||lv>0)?"bass":"upper";
+    lastName=name; if(!part) continue;
+    let notes=S.snd==="piano"?pianoNotes(p):(fretsOf(p)||[]).map((f,s)=>f>=0?OPEN[s]+f:null).filter(x=>x!==null);
+    if(!notes.length) continue;
+    strikes.push({t,vel,notes,part});
+  }
+  const ev=[], prog=S.snd==="piano"?0:25, strum=S.snd==="piano"?0:12;
+  ev.push({t:0,o:1,b:[0xC0,prog]});
+  /* nada terendah = lapisan "bass", sisanya "upper"; nada berhenti saat lapisannya dipukul lagi (sama seperti suara di app) */
+  strikes.forEach((s,si)=>{
+    let idx=0;
+    s.notes.forEach((m,i)=>{
+      const L=i===0?"bass":"upper";
+      if(s.part!=="all"&&s.part!==L) return;
+      let end=total;
+      for(let j=si+1;j<strikes.length;j++){const q=strikes[j]; if(q.part==="all"||q.part===L){end=q.t;break;}}
+      const on=s.t+(idx++)*strum, v=i===0?s.vel:Math.max(40,s.vel-10);
+      if(end-2<=on) return;
+      ev.push({t:on,o:2,b:[0x90,m,v]}); ev.push({t:end-2,o:0,b:[0x80,m,0]});
+    });
+  });
+  ev.unshift(meta(0,0x03,txtBytes(S.snd==="piano"?"Piano":"Gitar")));
+  const tracks=[track(t0),track(ev)];
+  if($("midMetro").checked){
+    const mt=[meta(0,0x03,txtBytes("Metronom"))];
+    for(let i=0;i<S.bars.length*n;i++){const t=i*bt, lv=level(i%n), nt=lv===2?76:77; mt.push({t,o:2,b:[0x99,nt,lv===2?110:lv===1?90:70]}); mt.push({t:t+bt/4,o:0,b:[0x89,nt,0]});}
+    tracks.push(track(mt));
+  }
+  const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,1,0,tracks.length,(PPQ>>8)&255,PPQ&255];
+  return new Uint8Array(hdr.concat(...tracks));
+}
+$("dlMid").onclick=()=>saveBlob(new Blob([buildMidi()],{type:"audio/midi"}),slug()+".mid");
+
+/* pengaturan ekspor */
+$("title").value=S.title||""; $("bpl").value=String(S.bpl||0); $("scDia").checked=S.scDia!==false;
+$("title").oninput=()=>{S.title=$("title").value;persist();};
+$("bpl").onchange=()=>{S.bpl=+$("bpl").value;persist();};
+$("scDia").onchange=()=>{S.scDia=$("scDia").checked;persist();};
+
+syncUI(); renderBars(); renderDots(); showNow(chordAt(0,0),false,0,0); renderScore();
+</script>
+</body>
+</html>
