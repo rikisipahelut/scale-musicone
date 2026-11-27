@@ -154,9 +154,14 @@ nav a[aria-current]{color:var(--teal);border-bottom-color:var(--teal);font-weigh
       <button class="btn" id="dlSvg">⬇ Partitur SVG</button>
       <button class="btn main" id="dlPdf">⬇ Partitur PDF</button>
       <button class="btn main" id="dlMid">⬇ MIDI</button>
-      <label class="check"><input type="checkbox" id="midMetro"> Sertakan metronom di MIDI</label>
+      <button class="btn main" id="dlMp3">⬇ Audio MP3</button>
+      <button class="btn" id="dlWav">⬇ Audio WAV</button>
+      <label class="check"><input type="checkbox" id="midMetro"> Sertakan metronom di MIDI &amp; audio</label>
+      <label>Diulang<select id="reps"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label>
     </div>
-    <p class="hint">MIDI berisi chord (sesuai Suara &amp; Cara main di atas), tempo, birama, dan nama chord sebagai marker. Bisa dibuka di MuseScore, FL Studio, Cubase, GarageBand, BandLab, dll.</p>
+    <p class="hint">MIDI berisi chord (sesuai Suara &amp; Cara main di atas), tempo, birama, dan nama chord sebagai marker. Bisa dibuka di MuseScore, FL Studio, Cubase, GarageBand, BandLab, dll.<br>
+      <b>MP3 / WAV</b> adalah rekaman suara lagu ini (gitar/piano sesuai pilihan di atas), bisa diputar di HP, laptop, speaker, atau dikirim lewat WhatsApp. MP3 butuh internet sekali saat diklik (untuk memuat encoder MP3); WAV selalu bisa tanpa internet, tapi ukuran filenya lebih besar.</p>
+    <p class="msg" id="audMsg"></p>
     <div id="score" class="score"></div>
   </section>
 </main>
@@ -569,6 +574,18 @@ function stop(){
   document.querySelectorAll(".dot.on").forEach(x=>x.classList.remove("on"));
   $("pos").textContent="Berhenti. Tekan ▶ Mainkan atau Spasi";
 }
+function playBeat(t,b,k,metro,chordOn){
+  const lv=level(k), p=chordAt(b,k), cell=parseCell(S.bars[b][k]);
+  if(metro) click(t,lv);
+  if(chordOn&&p){
+    const vol=lv===2?1.15:lv===1?1:.8;
+    if(S.mode==="each") strumAt(p,t,vol,"all");
+    else if(S.mode==="change"){ if(cell||(b===0&&k===0)||!lastName) strumAt(p,t,vol,"all"); }
+    else { if(cell||lv>0) strumAt(p,t,vol,"bass"); else strumAt(p,t,.8,"upper"); }
+    lastName=padName(p);
+  }
+  return p;
+}
 function scheduler(){
   const spb=60/S.bpm;
   while(nextT<ctx.currentTime+.12){
@@ -577,15 +594,7 @@ function scheduler(){
       queue.push({t:nextT,count:k+1}); countLeft--; nextT+=spb; continue;
     }
     if(bar>=S.bars.length){ if(S.loop) bar=0; else {const endT=nextT; queue.push({t:endT,end:true}); clearInterval(timer); timer=null; return;} }
-    const k=beat, lv=level(k), p=chordAt(bar,k), cell=parseCell(S.bars[bar][k]);
-    if(S.metro) click(nextT,lv);
-    if(S.chordOn&&p){
-      const vol=lv===2?1.15:lv===1?1:.8;
-      if(S.mode==="each") strumAt(p,nextT,vol,"all");
-      else if(S.mode==="change"){ if(cell||(bar===0&&k===0)||!lastName) strumAt(p,nextT,vol,"all"); }
-      else { if(cell||lv>0) strumAt(p,nextT,vol,"bass"); else strumAt(p,nextT,.8,"upper"); }
-      lastName=padName(p);
-    }
+    const k=beat, p=playBeat(nextT,bar,k,S.metro,S.chordOn);
     queue.push({t:nextT,bar,beat:k,p});
     nextT+=spb; beat++; if(beat>=beatsN()){beat=0;bar++;}
   }
@@ -809,6 +818,65 @@ $("dlPdf").onclick=async()=>{
   catch(e){alert("PDF gagal dibuat: "+e.message);}
   finally{b.disabled=false; b.textContent=t;}
 };
+
+/* ---------- AUDIO (MP3 / WAV) ---------- */
+async function renderSong(){
+  stop();
+  const SR=44100, n=beatsN(), spb=60/S.bpm, reps=+$("reps").value||1, lead=.15;
+  const beats=S.bars.length*n*reps, dur=lead+beats*spb+3;
+  const off=new OfflineAudioContext(1,Math.ceil(dur*SR),SR);
+  const keep={ctx,master,cache,voices,lastName};
+  ctx=off; master=off.createGain(); master.gain.value=.8; master.connect(off.destination); cache={}; voices=[]; lastName="";
+  try{
+    for(let i=0;i<beats;i++){const b=Math.floor(i/n)%S.bars.length, k=i%n; playBeat(lead+i*spb,b,k,$("midMetro").checked,true);}
+  } finally { ctx=keep.ctx; master=keep.master; cache=keep.cache; voices=keep.voices; lastName=keep.lastName; }
+  const buf=await off.startRendering(), d=buf.getChannelData(0);
+  /* normalisasi ke -1 dB dan potong sunyi di akhir */
+  let peak=0,end=d.length; for(let i=0;i<d.length;i++){const a=Math.abs(d[i]); if(a>peak) peak=a;}
+  while(end>SR&&Math.abs(d[end-1])<1e-4) end--;
+  const g=peak>0?.89/peak:1, pcm=new Int16Array(Math.min(d.length,end+SR/4));
+  for(let i=0;i<pcm.length;i++){let v=d[i]*g; pcm[i]=v<-1?-32768:v>1?32767:Math.round(v*32767);}
+  return {pcm,SR};
+}
+function wavBlob(pcm,SR){
+  const b=new ArrayBuffer(44+pcm.length*2), v=new DataView(b), w=(o,t)=>{for(let i=0;i<t.length;i++) v.setUint8(o+i,t.charCodeAt(i));};
+  w(0,"RIFF"); v.setUint32(4,36+pcm.length*2,true); w(8,"WAVE"); w(12,"fmt "); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,SR,true); v.setUint32(28,SR*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,"data"); v.setUint32(40,pcm.length*2,true);
+  new Int16Array(b,44).set(pcm);
+  return new Blob([b],{type:"audio/wav"});
+}
+let lameP=null;
+function loadLame(){
+  if(window.lamejs) return Promise.resolve(window.lamejs);
+  return lameP||(lameP=new Promise((res,rej)=>{
+    const sc=document.createElement("script"); sc.src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js";
+    sc.onload=()=>window.lamejs?res(window.lamejs):rej(new Error("encoder tidak tersedia"));
+    sc.onerror=()=>{lameP=null; sc.remove(); rej(new Error("encoder MP3 tidak bisa dimuat (periksa koneksi internet)"));};
+    document.head.appendChild(sc);
+  }));
+}
+async function mp3Blob(pcm,SR,prog){
+  const L=await loadLame(), enc=new L.Mp3Encoder(1,SR,128), out=[];
+  for(let i=0;i<pcm.length;i+=1152){
+    const c=enc.encodeBuffer(pcm.subarray(i,i+1152)); if(c.length) out.push(new Uint8Array(c));
+    if(i%(1152*300)===0){prog(Math.round(i/pcm.length*100)); await new Promise(r=>setTimeout(r));}
+  }
+  const f=enc.flush(); if(f.length) out.push(new Uint8Array(f));
+  return new Blob(out,{type:"audio/mpeg"});
+}
+async function exportAudio(kind,btn){
+  const t=btn.textContent, msg=$("audMsg"); btn.disabled=true; msg.className="msg"; msg.textContent="Merekam lagu…";
+  try{
+    if(kind==="mp3") await loadLame();
+    const {pcm,SR}=await renderSong(), secs=pcm.length/SR;
+    const blob=kind==="mp3"?await mp3Blob(pcm,SR,p=>msg.textContent="Mengubah ke MP3… "+p+"%"):wavBlob(pcm,SR);
+    saveBlob(blob,slug()+"."+kind);
+    msg.textContent="Selesai: "+kind.toUpperCase()+" "+Math.floor(secs/60)+":"+String(Math.round(secs%60)).padStart(2,"0")+" menit, "+(blob.size/1048576).toFixed(1)+" MB.";
+  }catch(e){msg.className="msg err"; msg.textContent="Gagal: "+e.message+(kind==="mp3"?". Coba pakai ⬇ Audio WAV (tidak butuh internet).":"");}
+  finally{btn.disabled=false; btn.textContent=t;}
+}
+$("dlMp3").onclick=()=>exportAudio("mp3",$("dlMp3"));
+$("dlWav").onclick=()=>exportAudio("wav",$("dlWav"));
 
 /* ---------- MIDI ---------- */
 function vlq(n){const b=[n&127]; while(n>>=7) b.unshift((n&127)|128); return b;}
