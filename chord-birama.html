@@ -55,6 +55,9 @@ input[type=range]{width:180px;accent-color:var(--teal)}
 .bar .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .bar .num{font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;padding:2px 8px;border-radius:10px;background:var(--card);border:1px solid var(--line)}
 .bar .num:hover{border-color:var(--teal)}
+.bar .sec{font:inherit;font-size:12px;font-weight:700;padding:2px 4px;border-radius:10px;border:1px dashed var(--line);background:transparent;color:var(--muted);max-width:120px;cursor:pointer}
+.bar .sec.has{border-style:solid;border-color:var(--teal);background:var(--teal);color:#fff}
+.bar .left{display:flex;gap:6px;align-items:center}
 .bar .tools button{border:none;background:transparent;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 6px;border-radius:6px}
 .bar .tools button:hover{background:var(--card);color:var(--ink)}
 .bar .tools button.del:hover{color:var(--red)}
@@ -125,18 +128,18 @@ nav a[aria-current]{color:var(--teal);border-bottom-color:var(--teal);font-weigh
       <button class="btn danger" id="clearAll">Hapus semua</button>
     </div>
     <div class="chips" id="chips"></div>
-    <p class="hint">Ketik nama chord di kotak ketukan (G, Am, D/F#, Cmaj7, …). Kotak kosong = chord sebelumnya terus berlanjut. Klik kotak lalu klik chord di baris "Chord dipakai" untuk mengisi cepat. Klik nomor bar untuk mulai main dari bar itu. <b>⧉</b> menggandakan bar, <b>✕</b> menghapus bar. Semua tersimpan otomatis di browser ini.</p>
+    <p class="hint">Ketik nama chord di kotak ketukan (G, Am, D/F#, Cmaj7, …). Kotak kosong = chord sebelumnya terus berlanjut. Klik kotak lalu klik chord di baris "Chord dipakai" untuk mengisi cepat. Klik nomor bar untuk mulai main dari bar itu. Pakai <b>+ bagian</b> di bar untuk menandai Intro, Verse, Chorus, Bridge, Coda, Outro, dll. <b>⧉</b> menggandakan bar, <b>✕</b> menghapus bar. Semua tersimpan otomatis di browser ini.</p>
   </section>
 
   <section class="card">
     <h2>Isi cepat</h2>
     <div class="controls">
-      <label>Tulis per bar, pisahkan dengan "|"<input type="text" id="quick" placeholder="G | Am D | Bm | C D" autocomplete="off"></label>
+      <label>Tulis per bar, pisahkan dengan "|"<input type="text" id="quick" placeholder="[Intro] G | D | [Verse] Em | C D" autocomplete="off"></label>
       <button class="btn main" id="quickRep">Ganti semua bar</button>
       <button class="btn" id="quickAdd">Tambahkan di akhir</button>
     </div>
     <p class="msg" id="msg"></p>
-    <p class="hint">Satu chord dalam bar diletakkan di ketukan 1. Dua chord di 4/4 jatuh di ketukan 1 dan 3, empat chord tiap ketukan satu. Pakai titik "." untuk ketukan kosong, misalnya <b>G . . D</b>.</p>
+    <p class="hint">Satu chord dalam bar diletakkan di ketukan 1. Dua chord di 4/4 jatuh di ketukan 1 dan 3, empat chord tiap ketukan satu. Pakai titik "." untuk ketukan kosong, misalnya <b>G . . D</b>. Tandai bagian lagu dengan kurung siku, misalnya <b>[Intro] G | D | [Verse] Em | C | [Chorus] G | D</b>.</p>
   </section>
   <section class="card">
     <h2>Ekspor partitur &amp; MIDI</h2>
@@ -144,6 +147,7 @@ nav a[aria-current]{color:var(--teal);border-bottom-color:var(--teal);font-weigh
       <label>Judul lagu<input type="text" id="title" autocomplete="off" style="width:260px"></label>
       <label>Bar per baris<select id="bpl"><option value="0">Otomatis</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
       <label class="check"><input type="checkbox" id="scDia" checked> Diagram chord gitar</label>
+      <label class="check"><input type="checkbox" id="secBreak" checked> Bagian baru di baris baru</label>
     </div>
     <div class="controls" style="margin-top:6px">
       <button class="btn main" id="dlPng">⬇ Partitur PNG</button>
@@ -407,6 +411,10 @@ const STORE="musicone-chordbirama-v1";
 let S={ts:"4/4",bpm:90,snd:"guitar",mode:"each",metro:true,countin:true,loop:true,chordOn:true,bars:[["G","","",""],["Am","","",""],["Bm","","",""],["C","","D",""]]};
 try{const d=JSON.parse(localStorage.getItem(STORE)); if(d&&Array.isArray(d.bars)&&TS[d.ts]) S=Object.assign(S,d);}catch(e){}
 var scoreQ=0;
+const SECTIONS=["Intro","Verse","Pre-Chorus","Chorus","Bridge","Interlude","Solo","Coda","Outro"];
+function syncSecs(){S.secs=Array.isArray(S.secs)?S.secs:[]; S.secs=S.bars.map((_,i)=>typeof S.secs[i]==="string"?S.secs[i]:"");}
+const secOf=b=>((S.secs&&S.secs[b])||"").trim();
+const secAt=b=>{for(let i=b;i>=0;i--) if(secOf(i)) return secOf(i); return "";};
 function persist(){try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){} cancelAnimationFrame(scoreQ); scoreQ=requestAnimationFrame(()=>renderScore());}
 const beatsN=()=>TS[S.ts].n;
 const isAcc=k=>TS[S.ts].acc.includes(k);
@@ -435,12 +443,18 @@ let focusCell=null;
 function renderBars(){
   const n=beatsN();
   document.documentElement.style.setProperty("--barw",Math.min(n*62+20,760)+"px");
-  $("bars").innerHTML=S.bars.map((bar,b)=>'<div class="bar" data-b="'+b+'"><div class="top"><span class="num" title="Mainkan dari bar ini">▶ '+(b+1)+'</span>'+
+  $("bars").innerHTML=S.bars.map((bar,b)=>'<div class="bar" data-b="'+b+'"><div class="top"><span class="left"><span class="num" title="Mainkan dari bar ini">▶ '+(b+1)+'</span>'+secSelect(b)+'</span>'+
     '<span class="tools"><button class="dup" title="Gandakan bar">⧉</button><button class="del" title="Hapus bar">✕</button></span></div>'+
     '<div class="beats" style="grid-template-columns:repeat('+n+',1fr)">'+bar.map((c,k)=>'<div class="cell'+(isAcc(k)?' acc':'')+'" data-b="'+b+'" data-k="'+k+'"><span class="bn">'+(k+1)+'</span>'+
       '<input type="text" value="'+esc(c)+'" placeholder="·" spellcheck="false" autocomplete="off" data-b="'+b+'" data-k="'+k+'"></div>').join("")+'</div></div>').join("");
   $("bars").querySelectorAll("input").forEach(validate);
   renderChips();
+}
+function secSelect(b){
+  const v=secOf(b), opts=SECTIONS.includes(v)||!v?SECTIONS:[v].concat(SECTIONS);
+  return '<select class="sec'+(v?' has':'')+'" data-b="'+b+'" title="Tandai awal bagian lagu">'+
+    '<option value="">'+(v?'— hapus tanda —':'+ bagian')+'</option>'+opts.map(o=>'<option'+(o===v?' selected':'')+'>'+esc(o)+'</option>').join("")+
+    '<option value="__custom">Lainnya…</option></select>';
 }
 const esc=t=>String(t).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 function validate(inp){const v=inp.value.trim(); inp.classList.toggle("bad",!!v&&v!=="."&&v!=="%"&&v!=="-"&&!parseChord(v));}
@@ -448,6 +462,12 @@ function renderChips(){
   const seen=[]; S.bars.forEach(bar=>bar.forEach(c=>{const p=parseCell(c); if(p){const n=padName(p); if(!seen.some(s=>s.n===n)) seen.push({n,t:c.trim()});}}));
   $("chips").innerHTML=seen.length?'Chord dipakai: '+seen.map(s=>'<button data-t="'+esc(s.t)+'">'+s.n+'</button>').join(""):"";
 }
+$("bars").addEventListener("change",e=>{
+  const sel=e.target; if(!sel.classList.contains("sec")) return;
+  let v=sel.value;
+  if(v==="__custom"){v=(prompt("Nama bagian (mis. Verse 2, Reff, Chorus 2):",secOf(+sel.dataset.b))||"").trim().slice(0,24);}
+  syncSecs(); S.secs[+sel.dataset.b]=v; persist(); renderBars();
+});
 $("bars").addEventListener("input",e=>{
   const inp=e.target; if(inp.tagName!=="INPUT") return;
   S.bars[+inp.dataset.b][+inp.dataset.k]=inp.value.trim(); validate(inp); persist(); renderChips();
@@ -461,8 +481,8 @@ $("bars").addEventListener("keydown",e=>{
 });
 $("bars").addEventListener("click",e=>{
   const barEl=e.target.closest(".bar"); if(!barEl) return; const b=+barEl.dataset.b;
-  if(e.target.closest(".del")){if(S.bars.length>1||confirm("Hapus bar terakhir?")){S.bars.splice(b,1); if(!S.bars.length) S.bars.push(emptyBar()); persist(); renderBars();} return;}
-  if(e.target.closest(".dup")){S.bars.splice(b+1,0,S.bars[b].slice()); persist(); renderBars(); return;}
+  if(e.target.closest(".del")){if(S.bars.length>1||confirm("Hapus bar terakhir?")){syncSecs(); S.bars.splice(b,1); S.secs.splice(b,1); if(!S.bars.length){S.bars.push(emptyBar());S.secs.push("");} persist(); renderBars();} return;}
+  if(e.target.closest(".dup")){syncSecs(); S.bars.splice(b+1,0,S.bars[b].slice()); S.secs.splice(b+1,0,""); persist(); renderBars(); return;}
   if(e.target.closest(".num")){stop(); start(b);}
 });
 $("chips").addEventListener("click",e=>{
@@ -474,14 +494,19 @@ $("chips").addEventListener("click",e=>{
   preview(parseChord(t.dataset.t));
 });
 const emptyBar=()=>Array(beatsN()).fill("");
-function addBar(){S.bars.push(emptyBar()); persist(); renderBars();}
+function addBar(){syncSecs(); S.bars.push(emptyBar()); S.secs.push(""); persist(); renderBars();}
 $("addBar").onclick=addBar;
-$("clearAll").onclick=()=>{if(confirm("Hapus semua bar dan chord? Ini tidak bisa dibatalkan.")){stop();S.bars=[emptyBar(),emptyBar(),emptyBar(),emptyBar()];persist();renderBars();}};
+$("clearAll").onclick=()=>{if(confirm("Hapus semua bar dan chord? Ini tidak bisa dibatalkan.")){stop();S.bars=[emptyBar(),emptyBar(),emptyBar(),emptyBar()];S.secs=["","","",""];persist();renderBars();}};
 
 /* isi cepat */
 function quickParse(txt){
-  const n=beatsN(), bad=[], over=[];
-  const bars=txt.split("|").map(s=>s.trim()).filter(Boolean).map((s,bi)=>{
+  const n=beatsN(), bad=[], over=[], secs=[]; let pend="";
+  const chunks=[];
+  txt.split("|").forEach(s=>{
+    s=s.replace(/\[([^\]]*)\]/g,(m,a)=>{pend=a.trim().slice(0,24);return " ";}).trim();
+    if(s){chunks.push(s); secs.push(pend); pend="";}
+  });
+  const bars=chunks.map((s,bi)=>{
     const toks=s.split(/[\s,]+/).filter(Boolean), bar=Array(n).fill("");
     toks.forEach(t=>{if(t!=="."&&t!=="%"&&!parseChord(t)) bad.push(t);});
     if(toks.length>n) over.push(bi+1);
@@ -489,14 +514,14 @@ function quickParse(txt){
     else toks.forEach((t,i)=>bar[Math.round(i*n/toks.length)]=t);
     return bar;
   });
-  return {bars,bad,over};
+  return {bars,bad,over,secs};
 }
 function quick(replace){
-  const {bars,bad,over}=quickParse($("quick").value);
+  const {bars,bad,over,secs}=quickParse($("quick").value);
   if(over.length){say("Bar "+over.join(", ")+" berisi lebih dari "+beatsN()+" chord (birama "+S.ts+"). Kurangi atau pecah jadi dua bar.",true);return;}
   if(!bars.length){say("Tulis dulu progresinya, misalnya: G | Am D | Bm | C",true);return;}
   if(bad.length){say("Tidak dikenali: "+bad.join(", ")+". Periksa lagi penulisannya.",true);return;}
-  stop(); S.bars=replace?bars:S.bars.concat(bars); persist(); renderBars();
+  stop(); syncSecs(); S.secs=replace?secs:S.secs.concat(secs); S.bars=replace?bars:S.bars.concat(bars); persist(); renderBars();
   say((replace?"Diganti: ":"Ditambahkan: ")+bars.length+" bar.");
 }
 function say(t,err){$("msg").textContent=t;$("msg").className="msg"+(err?" err":"");}
@@ -576,7 +601,7 @@ function frame(){
     if(ev.count){ $("pos").textContent="Hitungan awal: "+ev.count+" …"; showNow(chordAt(0,0)&&parseCell(S.bars[0][0])?chordAt(0,0):chordAt(0,0),true); }
     else{
       const c=document.querySelector('.cell[data-b="'+ev.bar+'"][data-k="'+ev.beat+'"]'); if(c){c.classList.add("now"); c.parentNode.parentNode.classList.add("cur");}
-      $("pos").textContent="Bar "+(ev.bar+1)+" dari "+S.bars.length+" · ketukan "+(ev.beat+1);
+      $("pos").textContent=(secAt(ev.bar)?secAt(ev.bar)+" · ":"")+"Bar "+(ev.bar+1)+" dari "+S.bars.length+" · ketukan "+(ev.beat+1);
       showNow(ev.p,false,ev.bar,ev.beat);
     }
   }
@@ -631,9 +656,13 @@ function textW(t,size){measCtx.font="700 "+size+"px 'Segoe UI','Helvetica Neue',
 function scoreSVG(){
   const W=1200, M=50, n=beatsN(), [num,den]=S.ts.split("/"), PRE=96, FS=n>6?17:22;
   /* label chord per baris: posisi x & ruang yang tersedia sampai label berikutnya */
-  const labelsOf=(L,bpl)=>{
-    const barW=(W-2*M-PRE)/bpl, bw=(barW-24)/n, out=[], cnt=Math.min(bpl,S.bars.length-L*bpl);
-    for(let j=0;j<cnt;j++){const b=L*bpl+j; for(let k=0;k<n;k++){
+  /* susun bar ke baris; bagian baru (Intro, Verse, …) mulai di baris baru */
+  const layout=bpl=>{const out=[]; let cur=[];
+    S.bars.forEach((_,b)=>{if(cur.length&&(cur.length>=bpl||(S.secBreak!==false&&secOf(b)))){out.push(cur);cur=[];} cur.push(b);});
+    if(cur.length) out.push(cur); return out;};
+  const labelsOf=(line,bpl)=>{
+    const barW=(W-2*M-PRE)/bpl, bw=(barW-24)/n, out=[], cnt=line.length;
+    for(let j=0;j<cnt;j++){const b=line[j]; for(let k=0;k<n;k++){
       const p=parseCell(S.bars[b][k])||(b===0&&k===0?chordAt(0,0):null);
       if(p) out.push({b,k,x:M+PRE+j*barW+14+(k+.5)*bw-8,name:padName(p)});
     }}
@@ -641,10 +670,10 @@ function scoreSVG(){
     out.forEach((l,i)=>l.avail=(i+1<out.length?out[i+1].x:endX+4)-l.x-10);
     return out;
   };
-  const fits=bpl=>{for(let L=0;L*bpl<S.bars.length;L++) if(labelsOf(L,bpl).some(l=>textW(l.name,FS*.8)>l.avail)) return false; return true;};
+  const fits=bpl=>layout(bpl).every(line=>labelsOf(line,bpl).every(l=>textW(l.name,FS*.8)<=l.avail));
   /* otomatis: bar per baris sebanyak mungkin selama nama chord tidak bertabrakan */
   const cand=n>=9?[2,1]:n>=6?[3,2,1]:[4,3,2];
-  const bpl=+S.bpl||cand.find(fits)||cand[cand.length-1], lines=Math.ceil(S.bars.length/bpl);
+  const bpl=+S.bpl||cand.find(fits)||cand[cand.length-1], lines=layout(bpl);
   const title=(S.title||"").trim()||"Progresi Chord";
   let o="", y=0;
   /* kepala */
@@ -668,23 +697,30 @@ function scoreSVG(){
   }
   /* sistem / baris */
   const G=10, barW=(W-2*M-PRE)/bpl, sysH=120;
-  for(let L=0;L<lines;L++){ breaks.push(y);
-    const top=y+48, bot=top+4*G, mid=top+2*G, endX=M+PRE+barW*Math.min(bpl,S.bars.length-L*bpl);
+  for(let L=0;L<lines.length;L++){ breaks.push(y);
+    const line=lines[L], hasSec=line.some(b=>secOf(b)), extra=hasSec?26:0;
+    const top=y+48+extra, bot=top+4*G, mid=top+2*G, endX=M+PRE+barW*line.length;
+    /* tanda bagian lagu: kotak berwarna di atas bar */
+    line.forEach((b,j)=>{const t=secOf(b); if(!t) return;
+      const bx=M+PRE+j*barW+(j===0?-PRE+2:2), tw=textW(t,16)+18;
+      o+='<rect x="'+bx.toFixed(1)+'" y="'+(y+4)+'" width="'+tw.toFixed(1)+'" height="26" rx="5" fill="#206f78"/>';
+      o+='<text x="'+(bx+9).toFixed(1)+'" y="'+(y+23)+'" font-size="16" font-weight="700" fill="#fff">'+xesc(t)+'</text>';
+    });
     for(let i=0;i<5;i++) o+='<line x1="'+M+'" y1="'+(top+i*G)+'" x2="'+endX+'" y2="'+(top+i*G)+'" stroke="#17464f" stroke-width="1.4"/>';
     o+='<text x="'+(M+4)+'" y="'+(bot+3.5)+'" font-size="78" fill="#17464f" font-family="Segoe UI Symbol, Noto Music, Bravura, Arial Unicode MS, serif">𝄞</text>';
     if(L===0){
       o+='<text x="'+(M+70)+'" y="'+(top+G*2-2)+'" text-anchor="middle" font-size="27" font-weight="800" fill="#17464f" font-family="Georgia,serif">'+num+'</text>';
       o+='<text x="'+(M+70)+'" y="'+(bot-1)+'" text-anchor="middle" font-size="27" font-weight="800" fill="#17464f" font-family="Georgia,serif">'+den+'</text>';
-    } else o+='<text x="'+(M+PRE-4)+'" y="'+(top-30)+'" text-anchor="end" font-size="13" fill="#6b7a7a">'+(L*bpl+1)+'</text>';
+    } else o+='<text x="'+(M+PRE-4)+'" y="'+(top-30)+'" text-anchor="end" font-size="13" fill="#6b7a7a">'+(line[0]+1)+'</text>';
     o+='<line x1="'+M+'" y1="'+top+'" x2="'+M+'" y2="'+bot+'" stroke="#17464f" stroke-width="1.6"/>';
     /* nama chord: kecilkan bila ruang sempit, dan rapatkan bila masih belum muat */
-    labelsOf(L,bpl).forEach(l=>{
+    labelsOf(line,bpl).forEach(l=>{
       let fs=FS, w=textW(l.name,fs), extra="";
       if(w>l.avail){fs=Math.max(12,Math.floor(FS*l.avail/w)); w=textW(l.name,fs); if(w>l.avail) extra=' textLength="'+Math.max(8,l.avail).toFixed(1)+'" lengthAdjust="spacingAndGlyphs"';}
       o+='<text x="'+l.x.toFixed(1)+'" y="'+(top-14)+'" font-size="'+fs+'" font-weight="700" fill="#17464f"'+extra+'>'+xesc(l.name)+'</text>';
     });
-    for(let j=0;j<bpl;j++){
-      const b=L*bpl+j; if(b>=S.bars.length) break;
+    for(let j=0;j<line.length;j++){
+      const b=line[j];
       const bx=M+PRE+j*barW, inner=barW-24, bw=inner/n;
       for(let k=0;k<n;k++){
         const x=bx+14+(k+.5)*bw;
@@ -696,7 +732,7 @@ function scoreSVG(){
         o+='<rect x="'+(ex-4)+'" y="'+top+'" width="4" height="'+(4*G)+'" fill="#17464f"/>';
       } else o+='<line x1="'+ex+'" y1="'+top+'" x2="'+ex+'" y2="'+bot+'" stroke="#17464f" stroke-width="1.6"/>';
     }
-    y+=sysH;
+    y+=sysH+extra;
   }
   y+=10;
   o+='<text x="'+(W/2)+'" y="'+(y+14)+'" text-anchor="middle" font-size="13" fill="#6b7a7a">Dibuat dengan Chord per Birama · Music One</text>';
@@ -796,7 +832,8 @@ function buildMidi(){
   for(let b=0;b<S.bars.length;b++) for(let k=0;k<n;k++){
     const t=(b*n+k)*bt, lv=level(k), p=chordAt(b,k), cell=parseCell(S.bars[b][k]); if(!p) continue;
     const vel=lv===2?104:lv===1?92:78, name=padName(p);
-    if(name!==lastName||cell) t0.push(meta(t,0x06,txtBytes(name)));
+    const sec=k===0?secOf(b):"";
+    if(name!==lastName||cell||sec) t0.push(meta(t,0x06,txtBytes((sec?"["+sec+"] ":"")+name)));
     let part=null;
     if(S.mode==="each") part="all";
     else if(S.mode==="change"){ if(cell||!lastName) part="all"; }
@@ -838,8 +875,9 @@ $("title").value=S.title||""; $("bpl").value=String(S.bpl||0); $("scDia").checke
 $("title").oninput=()=>{S.title=$("title").value;persist();};
 $("bpl").onchange=()=>{S.bpl=+$("bpl").value;persist();};
 $("scDia").onchange=()=>{S.scDia=$("scDia").checked;persist();};
+$("secBreak").checked=S.secBreak!==false; $("secBreak").onchange=()=>{S.secBreak=$("secBreak").checked;persist();};
 
-syncUI(); renderBars(); renderDots(); showNow(chordAt(0,0),false,0,0); renderScore();
+syncSecs(); syncUI(); renderBars(); renderDots(); showNow(chordAt(0,0),false,0,0); renderScore();
 </script>
 </body>
 </html>
